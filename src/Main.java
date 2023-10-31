@@ -7,5 +7,8 @@ import java.util.stream.Collectors;
 // then press Enter. You can now see whitespace characters in your code.
 public class Main {
     public static void main(String[] args) {
+        OrganizationLoader loader = new TsvFileOrganizationLoader(new File("dataset.tsv"));
+        List<Organization> organizations = loader.load();
+
     }
 }
