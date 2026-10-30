@@ -73,6 +73,8 @@ body {
 .icon-btn { position: absolute; z-index: 5; pointer-events: auto; top: calc(104px + env(safe-area-inset-top, 0px)); right: max(14px, env(safe-area-inset-right, 0px)); width: 38px; height: 38px; border-radius: 12px; border: 3px solid var(--ink); background: var(--cream); color: var(--ink); box-shadow: 0 3px 0 var(--ink); cursor: pointer; display: grid; place-items: center; }
 .icon-btn svg { width: 20px; height: 20px; }
 .icon-btn.corner { top: calc(14px + env(safe-area-inset-top, 0px)); }
+.icon-btn.music { right: calc(max(14px, env(safe-area-inset-right, 0px)) + 46px); }
+.icon-btn.off { background: #d9cdee; }
 
 #pops { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .pop { position: absolute; left: 0; top: 0; font-family: var(--display); font-size: 20px; white-space: nowrap; will-change: transform, opacity; }
@@ -109,7 +111,7 @@ body {
 /* level map */
 #menu { display: block; padding: 0; overflow-y: auto; overscroll-behavior: contain; scroll-behavior: smooth; }
 .mapbar { position: sticky; top: 0; z-index: 3; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
-  padding: calc(12px + env(safe-area-inset-top, 0px)) calc(64px + env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px));
+  padding: calc(12px + env(safe-area-inset-top, 0px)) calc(112px + env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px));
   background: linear-gradient(180deg, rgba(42,22,80,.55), rgba(42,22,80,0)); }
 .mapbar b { font-family: var(--display); font-weight: 400; font-size: 32px; line-height: 1; }
 .startot { display: flex; align-items: center; gap: 6px; font-family: var(--display); font-size: 20px; font-variant-numeric: tabular-nums; background: var(--ink); border-radius: 99px; padding: 4px 14px 4px 8px; text-shadow: none; }
@@ -221,6 +223,7 @@ body {
     </div>
   </div>
   <button class="icon-btn corner" id="mute" aria-label="Silenciar sonido"></button>
+  <button class="icon-btn corner music" id="music" aria-label="Quitar música"></button>
   <div id="pops"></div>
   <div id="flash"></div>
   <div id="hand" hidden><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M24 30V10a5 5 0 0 1 10 0v16l13 3.5c4 1 6.5 4.6 6 8.7L51 52a8 8 0 0 1-8 7H30a8 8 0 0 1-6.4-3.2L13 41.5a5 5 0 0 1 7.6-6.4z" fill="#fff8ec" stroke="#2a1650" stroke-width="4" stroke-linejoin="round"/><circle cx="29" cy="9" r="7" fill="none" stroke="#ff3d7f" stroke-width="3"/></svg></div>
@@ -772,7 +775,7 @@ $('#map').addEventListener('click', e => {
 function showMenu() {
   G.mode = 'menu'; G.state = 'idle';
   $('#hud').hidden = true;
-  $('#mute').classList.add('corner');
+  $('#mute').classList.add('corner'); $('#music').classList.add('corner');
   $('#menu').hidden = false;
   renderMap();
 }
@@ -1994,7 +1997,7 @@ function startLevel(level, tutorial = false, seed = 0) {
   G.camMode = 'pov';
   camera.up.set(0, 1, 0);
   $('#menu').hidden = true; $('#end').hidden = true;
-  $('#hud').hidden = false; $('#mute').classList.remove('corner');
+  $('#hud').hidden = false; $('#mute').classList.remove('corner'); $('#music').classList.remove('corner');
   $('#goldTag').hidden = true;
   $('#aimHint').innerHTML = level === 1 ? 'Arrastra hacia abajo para tensar<br>y a los lados para apuntar' : 'Tensa para coger velocidad.<br>En el túnel, desliza a los lados para patinar.';
   $('#aimHint').hidden = true;
@@ -2143,6 +2146,7 @@ let AC = null, muted = false;
 function audioOn() {
   if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; } }
   if (AC && AC.state === 'suspended') AC.resume();
+  MUSIC.start();
 }
 function tone(f1, f2, dur, type = 'sine', vol = 0.2, delay = 0) {
   if (!AC || muted) return;
@@ -2182,6 +2186,124 @@ const SFX = {
   star: n => { const b = [784, 988, 1175][n - 1] || 1175; tone(b, b, 0.12, 'square', 0.06); tone(b * 1.5, b * 1.5, 0.3, 'triangle', 0.12, 0.09); },
   jackpot: () => { [0, 0.12, 0.24, 0.36, 0.5].forEach((d, i) => tone([660, 830, 990, 1320, 1760][i], [660, 830, 990, 1320, 1760][i], 0.22, 'triangle', 0.15, d)); noise(0.8, 0.1, 5000, 'highpass'); },
 };
+/* ---------- music: a tiny step sequencer, one song per place ---------- */
+const MUSIC = (() => {
+  const mid = m => 440 * Math.pow(2, (m - 69) / 12);
+  const bars = (...b) => b.join(' ').trim().split(/\s+/).map(t => t === '.' ? null : +t);
+  const C = [60, 64, 67], G7 = [59, 62, 67], Am = [57, 60, 64], F = [57, 60, 65];
+  const TRACKS = {
+    // title and map: lazy, sunny marimba
+    menu: { bpm: 100, swing: 0.1, chords: [[41, F], [48, C], [43, G7], [48, C]], mel: bars(
+      '77 . . 81 . . 84 . 81 . . . 77 . . .',
+      '79 . . 76 . . 72 . 76 . . . 79 . . .',
+      '74 . . 79 . . 83 . 79 . . . 74 . . .',
+      '76 . . 72 . . 67 . 72 . . . . . . .') },
+    // islands: bouncy ska-ish romp
+    islands: { bpm: 118, swing: 0.14, chords: [[48, C], [43, G7], [45, Am], [41, F]], mel: bars(
+      '72 . 76 . 79 . 76 . 84 . 79 . 76 . 74 .',
+      '74 . 71 . 74 . 79 . 77 . 74 . 71 . . .',
+      '72 . 76 . 81 . 79 . 76 . 72 . 76 . 79 .',
+      '77 . 76 . 74 . 72 . 74 . . . 67 . 71 .') },
+    // tunnel: fast and driving
+    tunnel: { bpm: 138, swing: 0, chords: [[45, Am], [41, F], [48, C], [43, G7]], mel: bars(
+      '69 . 72 . 76 . 72 . 81 . 76 . 72 . 76 .',
+      '77 . 76 . 72 . 69 . 72 . 74 . 76 . . .',
+      '76 . 79 . 84 . 79 . 76 . 79 . 84 . 86 .',
+      '83 . 79 . 74 . 71 . 74 . 79 . 83 . . .') },
+  };
+  let bus = null, filt = null, timer = null, cur = 'menu', want = 'menu', step = 0, next = 0, loop = 0, filtTarget = 16000;
+  let on = true;
+  try { on = localStorage.getItem('fruitparty-music') !== '0'; } catch (e) {}
+  function voice(f, t, dur, type, vol, att = 0.006) {
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + att); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(bus); o.start(t); o.stop(t + dur + 0.02);
+    return o;
+  }
+  function nz(t, dur, vol, freq, type) {
+    if (!noiseBuf) { noiseBuf = AC.createBuffer(1, AC.sampleRate, AC.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+    const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+    s.buffer = noiseBuf; f.type = type; f.frequency.value = freq;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(f).connect(g).connect(bus); s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.02);
+  }
+  const kick = (t, v = 0.5) => { const o = AC.createOscillator(), g = AC.createGain(); o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.12); g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22); o.connect(g).connect(bus); o.start(t); o.stop(t + 0.25); };
+  const snare = (t, v = 0.16) => { nz(t, 0.13, v, 1800, 'bandpass'); voice(190, t, 0.08, 'triangle', v * 0.6); };
+  const hat = (t, v = 0.04, len = 0.03) => nz(t, len, v, 8000, 'highpass');
+  const clap = t => [0, 0.011, 0.022].forEach(d => nz(t + d, 0.06, 0.08, 1400, 'bandpass'));
+  function lead(m, t, dur, whistle) {
+    const f = mid(m);
+    if (whistle) { const o = voice(f, t, dur, 'sine', 0.11, 0.02); o.frequency.setValueAtTime(f * 0.97, t); o.frequency.linearRampToValueAtTime(f, t + 0.04); voice(f * 2, t, dur * 0.5, 'sine', 0.015); }
+    else { voice(f, t, dur, 'square', 0.04); voice(f * 1.006, t, dur, 'triangle', 0.06); }
+  }
+  function play(i, t) {
+    const tr = TRACKS[cur], bar = Math.floor(i / 16) % 4, s = i % 16, sp = 60 / tr.bpm / 4;
+    if (s % 2 === 1) t += sp * tr.swing;
+    const [root, tri] = tr.chords[bar], alt = loop % 2 === 1, m = tr.mel[bar * 16 + s];
+    if (cur === 'islands') {
+      if (s === 0 || s === 8 || (alt && s === 10)) kick(t);
+      if (s === 4 || s === 12) snare(t);
+      if (alt && s === 12) clap(t);
+      if (s % 2 === 0) hat(t, s % 4 === 2 ? 0.05 : 0.03);
+      const bl = { 0: 0, 3: 12, 6: 7, 8: 0, 11: 12, 14: 7 }[s];
+      if (bl !== undefined) { voice(mid(root + bl), t, sp * 1.6, 'triangle', 0.22); voice(mid(root + bl), t, sp * 0.8, 'square', 0.03); }
+      if (s % 4 === 2) tri.forEach(n => voice(mid(n), t, sp * 0.9, 'triangle', 0.04));
+      if (m) lead(m, t, sp * 1.8, alt);
+      if (alt && bar === 3 && s === 14) { const o = voice(mid(72), t, sp * 2, 'sine', 0.06); o.frequency.exponentialRampToValueAtTime(mid(84), t + sp * 2); }
+    } else if (cur === 'tunnel') {
+      if (s % 4 === 0) kick(t, 0.55);
+      if (s === 4 || s === 12) snare(t, 0.18);
+      hat(t, s % 4 === 2 ? 0.06 : 0.02, s % 4 === 2 ? 0.08 : 0.03);
+      if (s % 2 === 0) { const b = root + (s % 4 === 2 ? 12 : 0); voice(mid(b), t, sp * 1.4, 'triangle', 0.2); voice(mid(b), t, sp * 0.7, 'square', 0.035); }
+      if (s % 4 === 2) tri.forEach(n => voice(mid(n), t, sp * 0.7, 'square', 0.018));
+      if (alt && s % 2 === 1) voice(mid(tri[(s >> 1) % 3] + 12), t, sp * 0.8, 'sine', 0.035);
+      if (m) lead(m, t, sp * 1.7, false);
+    } else {
+      if (s === 0 || s === 10) kick(t, 0.32);
+      if (s === 8) snare(t, 0.06);
+      hat(t, 0.012, 0.025);
+      if (s === 0 || s === 8) voice(mid(root + (s ? 7 : 0)), t, sp * 3, 'triangle', 0.18);
+      if (s % 2 === 0) { const n = tri[(s >> 1) % 3] + (alt ? 12 : 0); voice(mid(n), t, sp * 1.5, 'sine', 0.06); voice(mid(n) * 4, t, 0.04, 'sine', 0.008); }
+      if (m) lead(m, t, sp * 2.6, !alt);
+    }
+  }
+  function tick() {
+    if (!AC || !bus) return;
+    if (next < AC.currentTime - 0.05) next = AC.currentTime + 0.05;
+    while (next < AC.currentTime + 0.12) {
+      if (step % 16 === 0 && want !== cur) { cur = want; step = 0; loop = 0; }
+      if (on && !muted) play(step, next);
+      next += 60 / TRACKS[cur].bpm / 4;
+      step++;
+      if (step % 64 === 0) loop++;
+    }
+  }
+  return {
+    start() {
+      if (!AC || timer) return;
+      filt = AC.createBiquadFilter(); filt.type = 'lowpass'; filt.frequency.value = 16000;
+      bus = AC.createGain(); bus.gain.value = 0.5;
+      bus.connect(filt).connect(AC.destination);
+      next = AC.currentTime + 0.08; step = 0;
+      timer = setInterval(tick, 25);
+    },
+    update() {
+      want = G.mode === 'tunnel' ? 'tunnel' : G.mode === 'islands' ? 'islands' : 'menu';
+      // music goes muffled in slow motion
+      const tgt = G.timeScale < 0.75 ? 650 : 16000;
+      if (filt && tgt !== filtTarget) { filtTarget = tgt; filt.frequency.setTargetAtTime(tgt, AC.currentTime, 0.08); }
+    },
+    toggle() { on = !on; try { localStorage.setItem('fruitparty-music', on ? '1' : '0'); } catch (e) {} return on; },
+    get on() { return on; },
+  };
+})();
+const musicBtn = $('#music');
+const ICON_NOTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3" fill="currentColor"/><circle cx="17" cy="16" r="3" fill="currentColor"/></svg>';
+const ICON_NOTE_OFF = ICON_NOTE.replace('</svg>', '<path d="M3 3l18 18" stroke-width="3"/></svg>');
+function paintMusic() { musicBtn.innerHTML = MUSIC.on ? ICON_NOTE : ICON_NOTE_OFF; musicBtn.classList.toggle('off', !MUSIC.on); musicBtn.setAttribute('aria-label', MUSIC.on ? 'Quitar música' : 'Poner música'); }
+paintMusic();
+musicBtn.addEventListener('click', () => { audioOn(); MUSIC.toggle(); paintMusic(); });
 const muteBtn = $('#mute');
 const ICON_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
 const ICON_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
@@ -2313,6 +2435,7 @@ function frame(now) {
   handEl.hidden = !(G.tutorial && G.state === 'aim' && !G.drag && G.camMode === 'pov' && !G.tutorialShot);
   updatePops(rdt);
   rollTotal(rdt);
+  MUSIC.update();
   // camera punch: FOV kick + shake, applied only for this render
   if (G.camMode !== 'tunnel') G.fovSpeed *= Math.max(0, 1 - rdt * 3);
   G.fovKick *= Math.max(0, 1 - rdt * 4);
