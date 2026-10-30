@@ -85,6 +85,7 @@ body {
 .overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(42, 22, 80, .62); backdrop-filter: blur(3px); overflow-y: auto;
   padding: calc(16px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
 .overlay.clear { background: none; backdrop-filter: none; }
+#slot, #end, #daily, #reveal { z-index: 6; }
 .card { width: 100%; max-width: 360px; margin: auto; background: var(--cream); color: var(--ink); border: 4px solid var(--ink); border-radius: 26px; box-shadow: 0 8px 0 var(--ink); padding: 22px 20px 20px; display: flex; flex-direction: column; gap: 14px; }
 .card h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 30px; line-height: 1.05; text-align: center; text-wrap: balance; }
 .card p { margin: 0; font-weight: 600; font-size: 15px; line-height: 1.35; text-align: center; }
@@ -162,6 +163,32 @@ body {
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes popin { from { transform: scale(0) rotate(-30deg); } }
 
+/* daily challenge */
+.dailybtn { pointer-events: auto; flex-basis: 100%; display: grid; grid-template-columns: 40px 1fr auto; gap: 10px; align-items: center; text-align: left; background: var(--peel); color: var(--ink); border: 4px solid var(--ink); border-radius: 18px; box-shadow: 0 5px 0 var(--ink); padding: 6px 12px 6px 8px; cursor: pointer; font: inherit; text-shadow: none; }
+.dailybtn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+.dailybtn:focus-visible, .board-wrap:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
+.dailybtn svg { width: 36px; height: 36px; }
+.dailybtn b { display: block; font-family: var(--display); font-weight: 400; font-size: 19px; line-height: 1; }
+.dailybtn small { display: block; font-weight: 800; font-size: 12.5px; line-height: 1.2; color: var(--ink-2); }
+.dailybtn em { font-style: normal; font-family: var(--display); font-size: 15px; background: var(--ink); color: var(--peel); border-radius: 99px; padding: 3px 10px; white-space: nowrap; }
+.dailycard { max-width: 380px; gap: 12px; }
+.dstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.dstats div { background: #f1e8ff; border: 3px solid var(--ink); border-radius: 14px; padding: 6px 8px; display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.dstats span { font-weight: 800; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); text-align: center; }
+.dstats b { font-family: var(--display); font-weight: 400; font-size: 19px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.board-wrap { max-height: 40vh; overflow-y: auto; border: 3px solid var(--ink); border-radius: 16px; background: #fff; }
+.board { list-style: none; margin: 0; padding: 0; }
+.board li { display: grid; grid-template-columns: 30px 30px 1fr auto; gap: 8px; align-items: center; padding: 7px 10px; border-bottom: 2px solid #efe6fb; font-weight: 700; font-size: 14.5px; }
+.board li:last-child { border-bottom: none; }
+.board li.me { background: #fff4c2; }
+.board .rk { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-family: var(--display); font-size: 14px; background: #efe6fb; font-variant-numeric: tabular-nums; }
+.board li:nth-child(1) .rk { background: var(--gold); } .board li:nth-child(2) .rk { background: #d7dde8; } .board li:nth-child(3) .rk { background: #f0b07a; }
+.board img { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--ink); object-fit: cover; }
+.board .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board .nm small { color: var(--peel); text-shadow: 0 1px 0 var(--ink); letter-spacing: 1px; margin-left: 4px; }
+.board .sc { font-family: var(--display); font-weight: 400; font-variant-numeric: tabular-nums; }
+.board .empty { display: block; text-align: center; padding: 18px 12px; color: var(--ink-2); }
+
 /* slot machine */
 .slot { width: 100%; max-width: 340px; margin: auto; position: relative; background: linear-gradient(180deg, #ff6a9e, var(--candy) 40%, #d81f63); border: 4px solid var(--ink); border-radius: 36px 36px 22px 22px; box-shadow: 0 8px 0 var(--ink); padding: 16px 16px 18px; display: flex; flex-direction: column; gap: 12px; color: var(--cream); }
 .slot-head { text-align: center; font-family: var(--display); font-size: 26px; line-height: 1; text-shadow: 0 3px 0 var(--ink); }
@@ -236,7 +263,8 @@ body {
   </div>
 
   <div class="overlay clear" id="menu" hidden>
-    <div class="mapbar outline"><b>Mapa</b><span class="startot" aria-label="Estrellas conseguidas"><i></i><span id="starTotal">0 / 0</span></span><div class="collection" id="collection" aria-label="Tus frutas"></div></div>
+    <div class="mapbar outline"><b>Mapa</b><span class="startot" aria-label="Estrellas conseguidas"><i></i><span id="starTotal">0 / 0</span></span><div class="collection" id="collection" aria-label="Tus frutas"></div>
+      <button type="button" class="dailybtn" id="dailyBtn"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M12 6h16v8a8 8 0 0 1-16 0z" fill="#ffc93c" stroke="#2a1650" stroke-width="3" stroke-linejoin="round"/><path d="M12 9H6a6 6 0 0 0 6 7M28 9h6a6 6 0 0 1-6 7" fill="none" stroke="#2a1650" stroke-width="3"/><path d="M17 22h6v6h-6zM12 34h16v-6H12z" fill="#ff3d7f" stroke="#2a1650" stroke-width="3" stroke-linejoin="round"/></svg><span><b>Reto del día</b><small id="dailySub">El mismo nivel para todo el mundo</small></span><em id="dailyTag">Jugar</em></button></div>
     <div class="map" id="map"></div>
     <div class="maptoast" id="mapToast" hidden></div>
   </div>
@@ -276,6 +304,25 @@ body {
       <button class="btn" id="next">Siguiente nivel</button>
     </div>
   </div>
+  <div class="overlay" id="daily" hidden>
+    <div class="card dailycard">
+      <div class="kicker" id="dailyDate">Reto del día</div>
+      <h2>Reto del día</h2>
+      <p id="dailyInfo">El mismo escenario y las mismas frutas para todo el mundo. Cuenta tu mejor intento.</p>
+      <div class="dstats">
+        <div><span>Tu mejor</span><b id="dailyMine">—</b></div>
+        <div><span>Puesto</span><b id="dailyRank">—</b></div>
+        <div><span>Nuevo reto</span><b id="dailyLeft">—</b></div>
+      </div>
+      <div class="board-wrap" tabindex="0" aria-label="Clasificación de hoy"><ol class="board" id="board"></ol></div>
+      <p class="small" id="boardNote"></p>
+      <div class="btnrow">
+        <button class="btn alt" id="dailyClose">Volver</button>
+        <button class="btn" id="dailyPlay">Jugar reto</button>
+      </div>
+    </div>
+  </div>
+
   <div class="overlay" id="reveal" hidden>
     <div class="card reveal">
       <div class="kicker" id="revealKicker">Nueva fruta desbloqueada</div>
@@ -773,7 +820,8 @@ $('#map').addEventListener('click', e => {
   else mapToast('Necesitas ' + node.gate + ' estrellas para pasar esta puerta. Tienes ' + totalStars() + '.');
 });
 function showMenu() {
-  G.mode = 'menu'; G.state = 'idle';
+  G.mode = 'menu'; G.state = 'idle'; G.daily = null;
+  renderBoard();
   $('#hud').hidden = true;
   $('#mute').classList.add('corner'); $('#music').classList.add('corner');
   $('#menu').hidden = false;
@@ -1931,6 +1979,10 @@ function levelEnd() {
     PROG.best[n] = bestScore = Math.max(PROG.best[n] || 0, G.levelScore);
     saveProg();
     if (nextNode && !wasOpen && isUnlocked(nextNode)) G.justUnlocked = nextNode.n;
+  } else if (G.daily) {
+    const loc = loadDailyLocal();
+    bestScore = Math.max(loc.best, G.levelScore);
+    submitDaily(G.levelScore, stars);
   } else nextNode = MAP[0];
   $('#endKicker').textContent = (G.node ? 'Nivel ' + G.node.n + ' · ' : '') + G.theme.name + (G.golden ? ' · oro ×5' : '');
   $('#endTitle').textContent = G.mode === 'islands'
@@ -1941,10 +1993,16 @@ function levelEnd() {
   $('#endLevel').textContent = G.levelScore.toLocaleString('es-ES');
   $('#endTotal').textContent = G.total.toLocaleString('es-ES');
   $('#endBest').textContent = bestScore.toLocaleString('es-ES');
-  const canNext = nextNode && isUnlocked(nextNode);
+  const canNext = G.daily || (nextNode && isUnlocked(nextNode));
   $('#next').hidden = !canNext;
-  $('#next').textContent = G.tutorial ? 'Jugar nivel 1' : 'Siguiente nivel';
+  $('#next').textContent = G.tutorial ? 'Jugar nivel 1' : G.daily ? 'Ver clasificación' : 'Siguiente nivel';
   $('#retry').hidden = !!G.tutorial;
+  if (G.daily) {
+    $('#endKicker').textContent = 'Reto del ' + G.daily.label;
+    $('#endHitsLbl').textContent = 'Puesto de hoy';
+    $('#endHits').textContent = dbState === 'ready' ? '…' : '—';
+    $('#endBonusLbl').textContent = 'Bonus';
+  }
   if (G.tutorial) $('#endKicker').textContent = 'Tutorial superado';
   else if (!canNext && nextNode) $('#endTitle').textContent = stars ? 'Puerta cerrada: necesitas ' + nextNode.gate + ' estrellas' : 'Necesitas 1 estrella para seguir';
   [...$('#endStars').children].forEach((s, i) => s.classList.toggle('on', i < stars));
@@ -1970,10 +2028,130 @@ function nextReveal() {
 }
 
 /* ---------- starting a level ---------- */
-function startNode(node) { G.node = node; G.scen = node.diff; startLevel(node.type === 'islands' ? 1 : 2, false, node.seed); }
+/* ---------- daily challenge ---------- */
+let DB = null, USER = null, MY_ID = null, dbState = 'pending';
+const BOARD = { day: null, rows: [], loaded: false, slow: false, error: null, readOnly: false, unsub: null, timer: 0, saving: false, queued: null };
+const MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+// One challenge per UTC day so everybody plays the same level at the same time.
+function dailyInfo() {
+  const dayNum = Math.floor(Date.now() / 86400000);
+  const d = new Date(dayNum * 86400000);
+  return { key: d.toISOString().slice(0, 10), dayNum, seed: (dayNum * 2654435761) % 2147483647 + 77, type: dayNum % 3 === 0 ? 'tunnel' : 'islands',
+    label: d.getUTCDate() + ' de ' + MONTHS[d.getUTCMonth()], ends: (dayNum + 1) * 86400000 };
+}
+function loadDailyLocal() { try { const v = JSON.parse(localStorage.getItem('fruitparty-daily')); if (v && v.day === dailyInfo().key) return v; } catch (e) {} return { day: dailyInfo().key, best: 0, stars: 0, tries: 0 }; }
+function saveDailyLocal(v) { try { localStorage.setItem('fruitparty-daily', JSON.stringify(v)); } catch (e) {} }
+function startDaily() {
+  const d = dailyInfo();
+  const loc = loadDailyLocal(); loc.tries++; saveDailyLocal(loc);
+  G.node = null; G.daily = d; G.scen = 2;
+  $('#daily').hidden = true; $('#end').hidden = true;
+  startLevel(d.type === 'tunnel' ? 2 : 1, false, d.seed);
+}
+function subscribeBoard() {
+  if (!DB) return;
+  const d = dailyInfo();
+  if (BOARD.day === d.key && !BOARD.error) return;
+  if (BOARD.unsub) BOARD.unsub();
+  Object.assign(BOARD, { day: d.key, rows: [], loaded: false, slow: false, error: null });
+  clearTimeout(BOARD.timer);
+  BOARD.timer = setTimeout(() => { if (!BOARD.loaded) { BOARD.slow = true; renderBoard(); } }, 10000);
+  BOARD.unsub = DB.collection('board').where('day', '==', d.key).orderBy('score', 'desc').limit(100).onSnapshot(snap => {
+    BOARD.rows = snap.docs.map(x => Object.assign({ id: x.id }, x.data()));
+    if (!snap.metadata.fromCache) { BOARD.loaded = true; BOARD.slow = false; clearTimeout(BOARD.timer); }
+    renderBoard();
+  }, err => { BOARD.error = err.code; BOARD.loaded = true; clearTimeout(BOARD.timer); renderBoard(); });
+  renderBoard();
+}
+function myRank() { const i = MY_ID ? BOARD.rows.findIndex(r => r.id === MY_ID) : -1; return i < 0 ? 0 : i + 1; }
+async function renderBoard() {
+  const d = dailyInfo(), loc = loadDailyLocal();
+  const mine = MY_ID && BOARD.rows.find(r => r.id === MY_ID);
+  const best = Math.max(loc.best, mine ? mine.score : 0), rank = myRank();
+  // map button
+  $('#dailySub').textContent = (d.type === 'tunnel' ? 'Túnel' : 'Islas') + ' · ' + d.label + (best ? ' · tu mejor ' + best.toLocaleString('es-ES') : '');
+  $('#dailyTag').textContent = rank ? '#' + rank : best ? 'Mejorar' : 'Jugar';
+  if (G.daily && !$('#end').hidden) $('#endHits').textContent = rank ? '#' + rank + ' de ' + BOARD.rows.length : dbState === 'ready' ? '…' : '—';
+  if ($('#daily').hidden) return;
+  $('#dailyDate').textContent = 'Reto del ' + d.label;
+  $('#dailyInfo').textContent = (d.type === 'tunnel' ? 'Túnel' : 'Islas') + ' con frutas sorpresa, el mismo para todo el mundo. Cuenta tu mejor intento, sin tragaperras.';
+  $('#dailyMine').textContent = best ? best.toLocaleString('es-ES') : '—';
+  $('#dailyRank').textContent = rank ? '#' + rank : '—';
+  const list = $('#board');
+  const note = $('#boardNote');
+  if (dbState !== 'ready') {
+    list.innerHTML = `<li><span class="empty">${dbState === 'pending' ? 'Conectando con la clasificación…' : 'La clasificación no está disponible en esta vista. Tu récord se guarda en este navegador.'}</span></li>`;
+    note.textContent = '';
+    return;
+  }
+  if (BOARD.error) { list.innerHTML = '<li><span class="empty">No se puede cargar la clasificación ahora mismo.</span></li>'; return; }
+  if (!BOARD.loaded && !BOARD.rows.length) { list.innerHTML = `<li><span class="empty">${BOARD.slow ? 'La clasificación tarda en responder…' : 'Cargando clasificación…'}</span></li>`; return; }
+  if (!BOARD.rows.length) list.innerHTML = '<li><span class="empty">Nadie ha jugado todavía el reto de hoy. ¡Sé el primero!</span></li>';
+  else {
+    const ps = USER ? await USER.profiles(BOARD.rows.map(r => r.id)) : {};
+    list.innerHTML = '';
+    BOARD.rows.forEach((r, i) => {
+      const li = document.createElement('li');
+      if (r.id === MY_ID) li.className = 'me';
+      const rk = document.createElement('span'); rk.className = 'rk'; rk.textContent = i + 1;
+      const img = document.createElement('img'); img.alt = ''; img.src = (ps[r.id] && ps[r.id].avatarUrl) || '';
+      const nm = document.createElement('span'); nm.className = 'nm';
+      nm.textContent = r.id === MY_ID ? 'Tú' : ((ps[r.id] && ps[r.id].name) || 'Alguien');
+      const st = document.createElement('small'); st.textContent = '★'.repeat(clamp(r.stars | 0, 0, 3)); nm.appendChild(st);
+      const sc = document.createElement('span'); sc.className = 'sc'; sc.textContent = (+r.score || 0).toLocaleString('es-ES');
+      li.append(rk, img, nm, sc);
+      list.appendChild(li);
+    });
+  }
+  note.textContent = BOARD.readOnly ? 'Con tu acceso puedes ver la clasificación, pero tu puntuación no se puede publicar.'
+    : !MY_ID ? 'Inicia sesión para aparecer en la clasificación.' : BOARD.slow ? 'Puede que la clasificación no esté al día.' : '';
+}
+async function submitDaily(score, stars) {
+  const d = dailyInfo(), loc = loadDailyLocal();
+  if (score > loc.best) { loc.best = score; loc.stars = Math.max(loc.stars, stars); saveDailyLocal(loc); }
+  if (!DB || !MY_ID || BOARD.readOnly) { renderBoard(); return; }
+  const mine = BOARD.rows.find(r => r.id === MY_ID);
+  if (mine && mine.score >= score) { renderBoard(); return; }
+  const body = { day: d.key, score, stars, kind: d.type, at: Date.now() };
+  if (BOARD.saving) { BOARD.queued = body; return; }
+  BOARD.saving = true;
+  try { await DB.collection('board').doc(MY_ID).set(body); }
+  catch (e) { if (e && (e.code === 'invalid_argument' || e.code === 'not_granted')) BOARD.readOnly = true; }
+  BOARD.saving = false;
+  if (BOARD.queued) { const q = BOARD.queued; BOARD.queued = null; submitDaily(q.score, q.stars); }
+  renderBoard();
+}
+let dailyTick = 0;
+function openDaily() {
+  $('#daily').hidden = false;
+  subscribeBoard(); renderBoard();
+  const upd = () => {
+    const ms = dailyInfo().ends - Date.now(), h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60;
+    $('#dailyLeft').textContent = h + ' h ' + String(m).padStart(2, '0') + ' min';
+    if (BOARD.day && BOARD.day !== dailyInfo().key) subscribeBoard();
+  };
+  upd(); clearInterval(dailyTick); dailyTick = setInterval(upd, 15000);
+  $('#dailyPlay').focus();
+}
+$('#dailyBtn').addEventListener('click', () => { audioOn(); SFX.tick(); openDaily(); });
+$('#dailyClose').addEventListener('click', () => { $('#daily').hidden = true; clearInterval(dailyTick); });
+$('#dailyPlay').addEventListener('click', () => { clearInterval(dailyTick); startDaily(); });
+(async () => {
+  try {
+    if (!window.claude || !window.claude.use) { dbState = 'none'; renderBoard(); return; }
+    const [db, us] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+    DB = db; USER = us;
+    if (USER) MY_ID = await USER.id();
+    dbState = DB ? 'ready' : 'none';
+    if (DB) subscribeBoard();
+  } catch (e) { dbState = 'none'; }
+  renderBoard();
+})();
+
+function startNode(node) { G.daily = null; G.node = node; G.scen = node.diff; startLevel(node.type === 'islands' ? 1 : 2, false, node.seed); }
 function startLevel(level, tutorial = false, seed = 0) {
   G.level = level;
-  if (tutorial) G.node = null;
+  if (tutorial) { G.node = null; G.daily = null; }
   G.mode = level === 1 ? 'islands' : 'tunnel';
   G.golden = false; G.tutorial = tutorial; G.tutorialShot = false;
   G.baseSum = 0; G.totalTargets = 0; G.levelScore = 0; G.combo = 0; G.starsShown = 0;
@@ -1983,15 +2161,16 @@ function startLevel(level, tutorial = false, seed = 0) {
   let t;
   if (tutorial) t = ['platano', 'sandia', 'naranja'];
   else {
-    const pool = unlockedKinds(), size = G.scen >= 3 ? 6 : 5;
+    const pool = G.daily ? KINDS.slice() : unlockedKinds(), size = G.scen >= 3 ? 6 : 5;
     t = shuffle(pool.slice()).slice(0, size);
     while (t.length < size) t.push(pick(pool));
     // always bring the newest unlock so it gets played
     const newest = pool.filter(k => FRUITS[k].unlock).sort((a, b) => FRUITS[b].unlock - FRUITS[a].unlock)[0];
-    if (newest && !t.includes(newest)) t[0] = newest;
+    if (!G.daily && newest && !t.includes(newest)) t[0] = newest;
   }
   RNG = Math.random;
   if (G.node) $('#lvlNum').textContent = 'Nivel ' + G.node.n + (G.node.type === 'tunnel' ? ' · Túnel' : ' · Islas');
+  if (G.daily) $('#lvlNum').textContent = 'Reto del día · ' + G.daily.label;
   G.tray = t; G.used = t.map(() => false); G.sel = 0;
   G.yaw = 0; G.pull = 0; G.drag = null;
   G.camMode = 'pov';
@@ -2004,7 +2183,7 @@ function startLevel(level, tutorial = false, seed = 0) {
   $('#flight').hidden = true;
   $('#title').hidden = true;
   renderTray(); loadFruit(); updateHud();
-  if (tutorial) beginPlay(); else openSlot();
+  if (tutorial || G.daily) beginPlay(); else openSlot();
 }
 function beginPlay() {
   G.state = 'aim';
@@ -2077,9 +2256,9 @@ $('#slotGo').addEventListener('click', () => { $('#slot').hidden = true; beginPl
 
 /* ---------- menus ---------- */
 $('#play').addEventListener('click', () => { audioOn(); goToMenu(); });
-$('#next').addEventListener('click', () => { const nx = G.node ? MAP[G.node.n] : MAP[0]; if (nx) startNode(nx); });
+$('#next').addEventListener('click', () => { if (G.daily) { openDaily(); return; } const nx = G.node ? MAP[G.node.n] : MAP[0]; if (nx) startNode(nx); });
 $('#revealOk').addEventListener('click', () => { $('#reveal').hidden = true; nextReveal(); });
-$('#retry').addEventListener('click', () => { if (G.node) startNode(G.node); });
+$('#retry').addEventListener('click', () => { if (G.daily) startDaily(); else if (G.node) startNode(G.node); });
 $('#toMenu').addEventListener('click', () => {
   $('#end').hidden = true;
   if (G.loaded) { holder.remove(G.loaded.mesh); G.loaded = null; }
