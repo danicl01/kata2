@@ -1019,6 +1019,39 @@ function target(x, top, z) {
   const ex = 0.9 * Math.abs(Math.cos(ry)) + 0.1, ez = 0.9 * Math.abs(Math.sin(ry)) + 0.1;
   return mkProp('target', g, { t: 'box', min: V(x - ex, top, z - ez), max: V(x + ex, cy + 1.35, z + ez) }, 0.55, 0.8, 250, 'Diana');
 }
+const BARREL_JUICE = [[0xff8a12, 0xffd23f], [0xe0102f, 0xff8fa8], [0x7b2fa0, 0xc9a0e8], [0x6fc13a, 0xd8ff9e]];
+function barrel(x, top, z) {
+  const [juice, light] = pick(BARREL_JUICE);
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 1.0, 20), mat(juice, { roughness: 0.35 })); g.add(body);
+  [-0.32, 0.32].forEach(y => { const r = new THREE.Mesh(new THREE.TorusGeometry(0.43, 0.035, 6, 24), mat(0x2a1650)); r.rotation.x = Math.PI / 2; r.position.y = y; g.add(r); });
+  const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.04, 20), mat(light)); lid.position.y = 0.51; g.add(lid);
+  const label = new THREE.Mesh(GEO.sphere, mat(0xfff8ec)); label.scale.set(0.22, 0.22, 0.05); label.position.set(0, 0, 0.41); g.add(label);
+  const dot = new THREE.Mesh(GEO.sphere, mat(juice)); dot.scale.set(0.12, 0.12, 0.03); dot.position.set(0, 0, 0.45); g.add(dot);
+  g.position.set(x, top + 0.5, z); g.rotation.y = facePlayer(x, z) + rand(-0.4, 0.4);
+  return mkProp('barrel', g, { t: 'cyl', x, z, r: 0.44, y0: top, y1: top + 1.0 }, 0.5, 1.1, 150, 'Barril de zumo', { juice, light });
+}
+function barrelBoom(p) {
+  if (p.state === 'gone') return;
+  const pos = p.pos.clone();
+  p.state = 'gone'; world.remove(p.mesh);
+  burst(pos, p.juice, 26, 9, 0.16); burst(pos, p.light, 14, 7, 0.12);
+  for (let i = 0; i < 8; i++) { const m = new THREE.Mesh(GEO.chunk, mat(0x8a6a4a)); m.scale.set(0.12, 0.5, 0.04); addDebris(m, pos.clone(), V(rand(-1, 1), rand(0.4, 1.2), rand(-1, 1)).multiplyScalar(rand(6, 11)), 1.8); }
+  splashFloor(pos, p.juice, 18, 4.2, 1.6);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1, 0.15, 6, 40), new THREE.MeshBasicMaterial({ color: p.light, transparent: true }));
+  ring.rotation.x = Math.PI / 2; ring.position.copy(pos); world.add(ring);
+  fx.push({ t: 0, dur: 0.45, upd(k) { ring.scale.setScalar(0.5 + k * 4.5); ring.material.opacity = 1 - k; if (k >= 1) { world.remove(ring); ring.material.dispose(); } } });
+  for (const q of props) {
+    if (q === p || q.state === 'gone') continue;
+    const d = q.pos.distanceTo(pos); if (d > 4.2) continue;
+    const v = V().subVectors(q.pos, pos).normalize().multiplyScalar(13 * (1 - d / 4.2) + 4); v.y += 6;
+    if (q.state === 'idle') knock(q, v); else if (q.state === 'rest') { q.state = 'fly'; q.vel.copy(v); q.still = 0; }
+  }
+  for (const b of projectiles) if (b.alive && b.pos.distanceTo(pos) < 4.2) b.vel.add(V().subVectors(b.pos, pos).normalize().multiplyScalar(10)).y += 5;
+  score(100, pos, '¡Barril!', false, 'big');
+  SFX.boom(0.9); J.hit(0.09, 0.8); J.flash(0.3); buzz(50);
+  if (pos.distanceTo(camera.position) < 22) lensSplat(p.juice, 6);
+}
 function balloon(x, y, z, sz = 1) {
   const g = new THREE.Group(); g.scale.setScalar(sz);
   const c = pick([0xff3d7f, 0x3fb6ff, 0xffd23f, 0xa8f03a, 0xb27bff, 0xff8a12]);
@@ -1086,10 +1119,16 @@ function populate(pl, theme) {
   if (pl.w >= pl.d) { const cw = pl.w / n; for (let i = 0; i < n; i++) cells.push({ x: pl.cx - pl.w / 2 + cw * (i + 0.5), z: pl.cz, w: cw - 0.4, d: pl.d - 0.8 }); }
   else { const cd = pl.d / n; for (let i = 0; i < n; i++) cells.push({ x: pl.cx, z: pl.cz - pl.d / 2 + cd * (i + 0.5), w: pl.w - 0.8, d: cd - 0.4 }); }
   cells.forEach(c => {
-    const opts = ['pins', 'target', 'cakes'];
-    if (c.w >= 2.2 && c.d >= 2.2) opts.push('tower', 'tower', 'tower', 'pins', 'bumper', 'cakes');
+    const opts = ['pins', 'target', 'cakes', 'barrels'];
+    if (c.w >= 2.2 && c.d >= 2.2) opts.push('tower', 'tower', 'tower', 'pins', 'bumper', 'cakes', 'barrels', 'barrels', 'junk', 'fan', 'boxes');
     if (c.w >= 2.6 && c.d >= 2.6) opts.push('ducks', 'ducks');
     const k = pick(opts);
+    OS = 1.7;
+    if (k === 'barrels') { const n = c.w >= 2.2 && c.d >= 2.2 ? 3 : 1; for (let i = 0; i < n; i++) barrel(c.x + (n > 1 ? [-0.5, 0.5, 0][i] : 0), pl.top, c.z + (n > 1 ? [0.45, 0.45, -0.45][i] : 0)); }
+    else if (k === 'junk') { bin(c.x - 0.7, pl.top, c.z + 0.5); suitcase(c.x + 0.6, pl.top, c.z + 0.3); wetFloor(c.x, pl.top, c.z - 0.7); barrel(c.x - 0.6, pl.top, c.z - 0.6); }
+    else if (k === 'fan') { fan(c.x, pl.top, c.z, rand(0, 6.28)); barrel(c.x + 0.9, pl.top, c.z + 0.6); }
+    else if (k === 'boxes') { boxStack(c.x, pl.top, c.z); barrel(c.x + 0.9, pl.top, c.z - 0.5); }
+    OS = 3;
     if (k === 'tower') tower(c.x, pl.top, c.z, c, theme);
     else if (k === 'pins') pins(c.x, pl.top, c.z, c);
     else if (k === 'target') target(c.x, pl.top, c.z);
@@ -1144,6 +1183,7 @@ function genTutorial() {
   for (let i = 0; i < 4; i++) balloon(rand(-1.5, 1.5), rand(5, 6.5), -17 + rand(-0.8, 0.8));
   const b = addPlatform(0, 1.6, -27, 8, 6.5, theme.plats[2], theme);
   duck(-1.6, b.top, -27, 1.2); tower(2, b.top, -27, { w: 2.4, d: 2.4 }, theme);
+  barrel(-3.3, a.top, -16.5); barrel(-2.4, a.top, -16.9); barrel(3.2, b.top, -28.5);
   G.pov = { pos: CAM_POS.clone(), yaw0: 0, pitch: -0.1 };
   $('#lvlNum').textContent = 'Tutorial';
   $('#lvlName').textContent = 'Primer destrozo';
@@ -1952,6 +1992,8 @@ function knock(p, v) {
   else if (p.kind === 'plant') { burst(p.pos, 0x6b4423, 8, 4, 0.08); burst(p.pos, 0x3f9a4a, 6, 4, 0.08); }
   else if (p.kind === 'papers' || p.kind === 'printer') { for (let i = 0; i < 8; i++) { const m = new THREE.Mesh(GEO.chunk, mat(0xfdfdf8)); m.scale.set(0.21, 0.004, 0.3); addDebris(m, p.pos.clone(), V(rand(-2, 2), rand(2, 5), rand(-2, 2)), rand(1.4, 2.2)); } }
   else if (p.kind === 'monitor') { burst(p.pos, 0x3fb6ff, 6, 4, 0.05); burst(p.pos, 0xffd23f, 4, 5, 0.04); }
+  if (p.kind === 'barrel') { const s0 = p.mesh.scale.x; fx.push({ t: 0, dur: 0.22, upd(k) { p.mesh.scale.setScalar(s0 * (1 + k * 0.35)); if (k >= 1) barrelBoom(p); } }); SFX.creak(1); }
+  if (p.kind === 'cake') { splashFloor(p.pos, 0xfff8ec, 5, 1.6, 0.9); splashFloor(p.pos, 0xff9cc6, 3, 1.4, 0.7); }
   if (p.kind === 'cake') { burst(p.pos, 0xfff8ec, 12, 5, 0.12); burst(p.pos, 0xff9cc6, 8, 4, 0.1); SFX.splat(1); }
   else if (p.kind === 'duck') SFX.quack();
   else if (p.kind === 'pin') SFX.pin();
@@ -2431,7 +2473,7 @@ $('#dailyPlay').addEventListener('click', () => { clearInterval(dailyTick); star
 /* ---------- office test map ---------- */
 // Everything in the office is built at real proportions and then scaled up,
 // so a monitor is bigger than a banana and a desk is a proper obstacle.
-const OS = 3;
+let OS = 3;
 const OFFICE = { name: 'Oficina de pruebas', skyTop: '#8fc3ea', skyBot: '#eef4f8', slime: 0x8aa4bf, plats: [0xd8dee6, 0xc9d3de, 0xd8dee6, 0xc9d3de], side: 0x5a6b7d };
 const ROOM = { x: 26, zFront: 8, zBack: -88, h: 16 };
 function carpetMat(w, d) {
@@ -2731,6 +2773,8 @@ function genOffice() {
   whiteboard(-20, 0, -36, 0.9);
   boxStack(12, 0, -84); boxStack(-23, 0, -45); boxStack(23, 0, -60); boxStack(-13, 0, -55);
   floorLamp(9, 0, -84.5);
+  // the office keeps a suspicious stash of juice barrels
+  [[-5, -13], [-4, -14.3], [-5.6, -14.6], [12, -33], [13, -34.2], [-13, -76], [-12, -77.2], [18, -78], [3, -52]].forEach(([x, z]) => { const b = barrel(x, 0, z); b.mesh.scale.setScalar(1.6); b.col.r *= 1.6; b.col.y1 = 1.6; b.mesh.position.y = 0.8; b.r *= 1.6; });
   partition(-6.5, 0, -79, false); partition(6.5, 0, -79, false);
   // somebody's birthday
   for (let i = 0; i < 6; i++) balloon(-6 + i * 2.4, 8 + (i % 2) * 1.2, -72, 2.6);
@@ -2749,6 +2793,7 @@ function genSandbox() {
   const c = addPlatform(0, 2.2, -38, 8, 8, theme.plats[3], theme); sweeper(c, theme);
   for (let i = -3; i <= 3; i++) balloon(i * 2.2, 6.5 + (i % 2) * 0.6, -20);
   hoop(-5, 4.5, -10);
+  barrel(-1.8, a.top, -16.4); barrel(2, a.top, -16.4); barrel(-3, b.top, -28.6); barrel(-2.1, b.top, -28.9); barrel(3, c.top, -40.5);
   G.pov = { pos: CAM_POS.clone(), yaw0: 0, pitch: -0.1 };
 }
 function startSandbox(kind) {
