@@ -108,7 +108,7 @@ body {
 
 /* level map */
 #menu { display: block; padding: 0; overflow-y: auto; overscroll-behavior: contain; scroll-behavior: smooth; }
-.mapbar { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+.mapbar { position: sticky; top: 0; z-index: 3; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
   padding: calc(12px + env(safe-area-inset-top, 0px)) calc(64px + env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px));
   background: linear-gradient(180deg, rgba(42,22,80,.55), rgba(42,22,80,0)); }
 .mapbar b { font-family: var(--display); font-weight: 400; font-size: 32px; line-height: 1; }
@@ -141,6 +141,24 @@ body {
 @keyframes ring { from { transform: scale(.85); opacity: 1; } to { transform: scale(1.3); opacity: 0; } }
 @keyframes pop { from { transform: scale(0) rotate(-20deg); } }
 @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+/* fruit unlocks */
+.collection { flex-basis: 100%; display: flex; gap: 6px; flex-wrap: wrap; }
+.collection button { pointer-events: auto; width: 36px; height: 36px; border-radius: 12px; border: 3px solid var(--ink); background: var(--cream); font-size: 20px; line-height: 1; display: grid; place-items: center; cursor: pointer; padding: 0; box-shadow: 0 3px 0 var(--ink); }
+.collection button.locked { background: #b9acd3; }
+.collection button.locked span, .fbadge.dark span { filter: brightness(0) opacity(.55); }
+.collection button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
+.fbadge { position: absolute; transform: translate(-50%, -50%) rotate(-8deg); width: 46px; height: 46px; border-radius: 50%; background: var(--cream); border: 3px solid var(--ink); box-shadow: 0 4px 0 var(--ink); display: grid; place-items: center; font-size: 26px; pointer-events: none; }
+.fbadge::after { content: "NUEVA"; position: absolute; bottom: -12px; font-family: var(--body); font-weight: 800; font-size: 10px; letter-spacing: .08em; background: var(--candy); color: var(--cream); border: 2px solid var(--ink); border-radius: 99px; padding: 0 5px; }
+.fbadge.dark::after { content: "?"; background: var(--ink-2); }
+.reveal { align-items: center; text-align: center; }
+.bigfruit { position: relative; width: 150px; height: 150px; display: grid; place-items: center; }
+.bigfruit::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: repeating-conic-gradient(var(--peel) 0 15deg, #fff1b8 15deg 30deg); animation: spin 6s linear infinite; }
+.bigfruit span { position: relative; font-size: 92px; line-height: 1; animation: popin .7s cubic-bezier(.3,1.8,.5,1) backwards .15s; filter: drop-shadow(0 6px 0 rgba(42,22,80,.35)); }
+.tagpill { font-family: var(--display); font-size: 15px; background: var(--ink); color: var(--peel); border-radius: 99px; padding: 2px 14px; }
+.card p.small { font-size: 13.5px; color: var(--ink-2); }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes popin { from { transform: scale(0) rotate(-30deg); } }
 
 /* slot machine */
 .slot { width: 100%; max-width: 340px; margin: auto; position: relative; background: linear-gradient(180deg, #ff6a9e, var(--candy) 40%, #d81f63); border: 4px solid var(--ink); border-radius: 36px 36px 22px 22px; box-shadow: 0 8px 0 var(--ink); padding: 16px 16px 18px; display: flex; flex-direction: column; gap: 12px; color: var(--cream); }
@@ -175,7 +193,7 @@ body {
 @keyframes bob { 50% { transform: translateY(-6px) rotate(-2deg); } }
 @keyframes blink { to { background: var(--cream); } }
 @keyframes banner { 0% { opacity: 0; transform: scale(.6); } 15% { opacity: 1; transform: scale(1.06); } 25% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-20px); } }
-@media (prefers-reduced-motion: reduce) { #hand { animation-duration: 3s; } #flight, #combo.show, .stars span.on, .cta .btn, .bulbs i { animation: none; } #banner.show { animation-duration: 3s; } }
+@media (prefers-reduced-motion: reduce) { .bigfruit::before { animation: none; } #hand { animation-duration: 3s; } #flight, #combo.show, .stars span.on, .cta .btn, .bulbs i { animation: none; } #banner.show { animation-duration: 3s; } }
 </style>
 
 <div id="stage">
@@ -215,7 +233,7 @@ body {
   </div>
 
   <div class="overlay clear" id="menu" hidden>
-    <div class="mapbar outline"><b>Mapa</b><span class="startot" aria-label="Estrellas conseguidas"><i></i><span id="starTotal">0 / 0</span></span></div>
+    <div class="mapbar outline"><b>Mapa</b><span class="startot" aria-label="Estrellas conseguidas"><i></i><span id="starTotal">0 / 0</span></span><div class="collection" id="collection" aria-label="Tus frutas"></div></div>
     <div class="map" id="map"></div>
     <div class="maptoast" id="mapToast" hidden></div>
   </div>
@@ -255,6 +273,18 @@ body {
       <button class="btn" id="next">Siguiente nivel</button>
     </div>
   </div>
+  <div class="overlay" id="reveal" hidden>
+    <div class="card reveal">
+      <div class="kicker" id="revealKicker">Nueva fruta desbloqueada</div>
+      <div class="bigfruit"><span id="revealIcon">🍓</span></div>
+      <h2 id="revealName">Fresa</h2>
+      <div class="tagpill" id="revealTag">Pegajosa</div>
+      <p id="revealDesc"></p>
+      <p class="small" id="revealT"></p>
+      <button class="btn" id="revealOk">¡A probarla!</button>
+    </div>
+  </div>
+
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -357,6 +387,12 @@ const melonMat = cachedTexMat('melon', () => new THREE.MeshStandardMaterial({ ro
     g.fill();
   }
 }) }));
+const pinaMat = cachedTexMat('pina', () => new THREE.MeshStandardMaterial({ roughness: 0.7, map: canvasTex(128, 128, (g, w, h) => {
+  g.fillStyle = '#e8a317'; g.fillRect(0, 0, w, h);
+  g.strokeStyle = '#8a5208'; g.lineWidth = 4;
+  for (let i = -8; i < 16; i++) { g.beginPath(); g.moveTo(i * 16, 0); g.lineTo(i * 16 + h, h); g.stroke(); g.beginPath(); g.moveTo(i * 16, h); g.lineTo(i * 16 + h, 0); g.stroke(); }
+  g.fillStyle = '#ffd25a'; for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) { g.beginPath(); g.arc(i * 16 + 8, j * 16 + 8, 2.5, 0, 6.3); g.fill(); }
+}) }));
 const ballMat = cachedTexMat('ball', () => new THREE.MeshStandardMaterial({ roughness: 0.35, map: canvasTex(256, 32, (g, w, h) => {
   ['#ff3d7f', '#fff8ec', '#3fb6ff', '#fff8ec', '#ffd23f', '#fff8ec'].forEach((c, i) => { g.fillStyle = c; g.fillRect(i * w / 6, 0, w / 6 + 1, h); });
 }) }));
@@ -417,8 +453,22 @@ const FRUITS = {
   uvas: { name: 'Uvas', icon: '🍇', color: 0x7b3fa0, r: 0.3, mass: 1.3, rest: 0.45, impactFric: 0.15, rollFric: 1.5,
     verb: '¡Divide!', hint: 'Toca y el racimo se separa en seis uvas.',
     tverb: '¡Divide!', thint: 'Toca y el racimo se separa en tres uvas por carriles distintos.', steer: 6.5, damp: 1.5, drag: 1, hop: 0.3 },
+  // unlocked on the map
+  fresa: { name: 'Fresa', icon: '🍓', color: 0xff2a4d, r: 0.22, mass: 0.7, rest: 0.5, impactFric: 0.12, rollFric: 1.4, unlock: 5, tag: 'Pegajosa',
+    verb: '¡Mermelada!', hint: 'Toca: se pega a lo próximo que toque y revienta en mermelada.',
+    tverb: '¡Pegajosa!', thint: 'Toca y se agarra a la pared: 3 s de control total.', steer: 7, damp: 1.3, drag: 0.9, hop: 0.35 },
+  pina: { name: 'Piña', icon: '🍍', color: 0xf2b21a, r: 0.32, mass: 2, rest: 0.3, impactFric: 0.3, rollFric: 2, unlock: 7, tag: 'Pinchuda',
+    verb: '¡Pinchos!', hint: 'Toca: saca los pinchos y atraviesa todo lo que pilla sin frenar.',
+    tverb: '¡Torbellino!', thint: 'Toca: da vueltas por todo el tubo cogiendo monedas y sin chocar.', steer: 4.5, damp: 2, drag: 0.8, hop: 0.1 },
+  zanahoria: { name: 'Zanahoria', icon: '🥕', color: 0xff7a1a, r: 0.2, mass: 0.9, rest: 0.3, impactFric: 0.15, rollFric: 1.6, unlock: 13, tag: 'Misil', veg: true,
+    verb: '¡Cohete!', hint: 'Toca: sale recta como un misil y explota al chocar.',
+    tverb: '¡Cohete!', thint: 'Toca: vuela por el centro del túnel por encima de los obstáculos.', steer: 6, damp: 1.4, drag: 0.6, hop: 0.2 },
+  berenjena: { name: 'Berenjena', icon: '🍆', color: 0x6a2c91, r: 0.3, mass: 1.6, rest: 0.75, impactFric: 0.08, rollFric: 1, unlock: 19, tag: 'Gelatinosa', veg: true,
+    verb: '¡Gigante!', hint: 'Rebota como gelatina. Toca y se hace gigante durante 2,5 s.',
+    tverb: '¡Rebote!', thint: 'Toca: durante 3 s rebota en los obstáculos en vez de reventar.', steer: 5, damp: 1.2, drag: 1, hop: 0.5 },
 };
 const KINDS = Object.keys(FRUITS);
+const BASE_KINDS = KINDS.filter(k => !FRUITS[k].unlock);
 // Everything the slot machine can show, including produce planned for later levels.
 const SLOT_ICONS = ['🍌', '🍉', '🍊', '🥥', '🍇', '🍓', '🍍', '🍒', '🍋', '🍑', '🥝', '🥕', '🍆', '🥦', '🌽'];
 
@@ -444,6 +494,25 @@ function makeFruit(kind, golden = G.golden) {
     const layers = [[0.12, 4, 0.11], [0, 3, 0.09], [-0.12, 2, 0.06], [-0.23, 1, 0]];
     layers.forEach(([y, n, rr]) => { for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2 + y * 5; add(GEO.sphere, mat(0x7b3fa0, { roughness: 0.3 }), Math.cos(a) * rr, y, Math.sin(a) * rr, 0.1); } });
     add(GEO.chunk, mat(0x5a8a2a), 0, 0.24, 0, [0.03, 0.12, 0.03]);
+  } else if (kind === 'fresa') {
+    const prof = [[0, -0.22], [0.08, -0.18], [0.16, -0.06], [0.2, 0.06], [0.17, 0.14], [0.08, 0.18], [0, 0.18]].map(q => new THREE.Vector2(q[0], q[1]));
+    add(new THREE.LatheGeometry(prof, 18), mat(0xff2a4d, { roughness: 0.35 }));
+    [[-0.1, 0.13], [0, 0.185], [0.08, 0.19]].forEach(([y, rr], j) => { for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + j; add(GEO.lowSphere, mat(0xffe27a), Math.cos(a) * rr, y, Math.sin(a) * rr, [0.018, 0.026, 0.018]); } });
+    for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; const l = add(GEO.chunk, mat(0x2f9a3a), Math.cos(a) * 0.08, 0.19, Math.sin(a) * 0.08, [0.14, 0.02, 0.05]); l.rotation.y = -a; }
+  } else if (kind === 'pina') {
+    add(GEO.sphere, pinaMat, 0, -0.02, 0, [0.25, 0.32, 0.25]);
+    for (let i = 0; i < 7; i++) { const a = i / 7 * Math.PI * 2; const c = add(new THREE.ConeGeometry(0.05, 0.3, 4), mat(0x2f9a3a), Math.cos(a) * 0.05, 0.4, Math.sin(a) * 0.05); c.rotation.z = Math.cos(a) * 0.5; c.rotation.x = -Math.sin(a) * 0.5; }
+    add(new THREE.ConeGeometry(0.05, 0.36, 4), mat(0x3fb04a), 0, 0.44, 0);
+  } else if (kind === 'zanahoria') {
+    const body = new THREE.ConeGeometry(0.13, 0.6, 12); body.rotateX(Math.PI / 2);
+    add(body, mat(0xff7a1a, { roughness: 0.6 }));
+    for (let i = 0; i < 3; i++) { const l = add(GEO.chunk, mat(0x2f9a3a), (i - 1) * 0.04, 0, -0.38, [0.03, 0.03, 0.2]); l.rotation.y = (i - 1) * 0.4; }
+  } else if (kind === 'berenjena') {
+    add(GEO.sphere, mat(0x5b2a86, { roughness: 0.2 }), 0, 0, 0.04, [0.23, 0.23, 0.32]);
+    add(GEO.sphere, mat(0x5b2a86, { roughness: 0.2 }), 0, 0.02, -0.18, [0.17, 0.17, 0.18]);
+    const cap = new THREE.ConeGeometry(0.14, 0.14, 6); cap.rotateX(-Math.PI / 2);
+    add(cap, mat(0x3f8a2a), 0, 0.02, -0.32);
+    add(GEO.chunk, mat(0x3f8a2a), 0, 0.02, -0.42, [0.03, 0.03, 0.1]);
   } else if (kind === 'uva') {
     add(GEO.sphere, mat(0x7b3fa0, { roughness: 0.3 }), 0, 0, 0, 0.12);
   }
@@ -491,6 +560,8 @@ function saveProg() { try { localStorage.setItem('fruitparty-map', JSON.stringif
 const starsOf = n => PROG.stars[n] || 0;
 const totalStars = () => MAP.reduce((a, m) => a + starsOf(m.n), 0);
 const isUnlocked = node => node.n === 1 || (starsOf(node.n - 1) >= 1 && totalStars() >= node.gate);
+const fruitUnlocked = k => !FRUITS[k].unlock || isUnlocked(MAP[FRUITS[k].unlock - 1]);
+const unlockedKinds = () => KINDS.filter(fruitUnlocked);
 function currentNode() { for (const m of MAP) if (isUnlocked(m) && !starsOf(m.n)) return m; return MAP.filter(isUnlocked).pop(); }
 
 function disposeTree(o) { o.traverse(c => { if (c.geometry && !SHARED.has(c.geometry)) c.geometry.dispose(); }); }
@@ -664,10 +735,12 @@ function renderMap() {
     const cls = ['node', m.type, open ? '' : 'locked', cur && cur.n === m.n && open ? 'current' : '', G.justUnlocked === m.n ? 'fresh' : ''].join(' ');
     const label = `Nivel ${m.n}, ${m.type === 'tunnel' ? 'túnel' : 'islas'}${open ? ', ' + st + ' de 3 estrellas' : ', bloqueado'}`;
     html += `<button type="button" class="${cls}" id="node-${m.n}" data-n="${m.n}" style="left:${x}%;top:${y}px" aria-label="${label}">${open ? m.n : ICON_LOCK}${open ? '<span class="kind">' + (m.type === 'tunnel' ? ICON_TUNNEL : ICON_ISLAND) + '</span>' : ''}</button>`;
+    for (const k of KINDS) if (FRUITS[k].unlock === m.n) html += `<div class="fbadge${open ? '' : ' dark'}" style="left:calc(${x}% + ${x > 50 ? -66 : 66}px);top:${y}px" aria-hidden="true"><span>${FRUITS[k].icon}</span></div>`;
     if (open) html += `<div class="nstars" style="left:${x}%;top:${y + 42}px">${[0, 1, 2].map(k => `<i class="${k < st ? 'on' : ''}"></i>`).join('')}</div>`;
   });
   map.innerHTML = html;
   $('#starTotal').textContent = tot + ' / ' + MAP.length * 3;
+  $('#collection').innerHTML = KINDS.map(k => `<button type="button" data-k="${k}" class="${fruitUnlocked(k) ? '' : 'locked'}" aria-label="${fruitUnlocked(k) ? FRUITS[k].name : 'Bloqueada'}"><span>${FRUITS[k].icon}</span></button>`).join('');
   G.justUnlocked = 0;
   const target = cur ? pts[cur.n - 1].y : H;
   const menu = $('#menu');
@@ -675,6 +748,12 @@ function renderMap() {
   menu.scrollTop = Math.max(0, target - menu.clientHeight * 0.55);
   menu.style.scrollBehavior = '';
 }
+$('#collection').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const F = FRUITS[b.dataset.k];
+  if (fruitUnlocked(b.dataset.k)) mapToast(F.name + ': ' + F.hint);
+  else mapToast((F.veg ? 'Verdura sorpresa' : 'Fruta sorpresa') + ': se desbloquea al llegar al nivel ' + F.unlock + '.');
+});
 let toastT = 0;
 function mapToast(msg) {
   const t = $('#mapToast'); t.textContent = msg; t.hidden = false;
@@ -1085,7 +1164,7 @@ function addObstacle(s, idx) {
 // world position on the wall, using the same frame as the obstacles' local rotation (local z = -T)
 function makeRider(kind, mesh, th, om, v) {
   const F = FRUITS[kind === 'uva' ? 'uvas' : kind];
-  return { kind, mesh, F, s: TUN.sStart, prevS: TUN.sStart, th, om, v, h: 0, vh: 0, r: kind === 'uva' ? 0.13 : F.r, alive: true, done: false, doneT: 0, stopT: 0, top: false, smash: 0, magnet: 0, turbo: 0, enter: 0, from: V(), main: kind !== 'uva' };
+  return { kind, mesh, F, s: TUN.sStart, prevS: TUN.sStart, th, om, v, h: 0, vh: 0, r: kind === 'uva' ? 0.13 : F.r, alive: true, done: false, doneT: 0, stopT: 0, top: false, smash: 0, magnet: 0, turbo: 0, grip: 0, spinT: 0, spinDir: 1, fly: 0, bouncy: 0, enter: 0, from: V(), main: kind !== 'uva' };
 }
 const RP = V(), RN = V(), RA = V();
 function stepRider(r, dt) {
@@ -1096,14 +1175,19 @@ function stepRider(r, dt) {
   r.prevS = r.s;
   r.s += r.v * dt;
   r.turbo -= dt; r.smash -= dt; r.magnet -= dt;
-  const steer = clamp(G.steer + G.keySteer, -1, 1) * r.F.steer;
-  const acc = -(GRAV / TR) * 0.85 * Math.sin(r.th) + steer - r.F.damp * r.om - (r.v * r.v * FR.k / TR) * 0.9;
+  r.grip -= dt; r.spinT -= dt; r.fly -= dt; r.bouncy -= dt;
+  const input = clamp(G.steer + G.keySteer, -1, 1);
+  let acc;
+  if (r.spinT > 0) { r.om = 10 * r.spinDir; acc = 0; }
+  else if (r.grip > 0) acc = input * 16 - 7 * r.om;
+  else acc = -(GRAV / TR) * 0.85 * Math.sin(r.th) + input * r.F.steer - r.F.damp * r.om - (r.v * r.v * FR.k / TR) * 0.9;
   r.om += acc * dt;
   r.th = Math.atan2(Math.sin(r.th + r.om * dt), Math.cos(r.th + r.om * dt));
   if (r.h > 0 || r.vh > 0) {
     r.vh -= GRAV * dt; r.h += r.vh * dt;
     if (r.h <= 0) { r.h = 0; if (r.vh < -4 && r.F.hop) { r.vh = -r.vh * r.F.hop; SFX.boing(1.3); } else r.vh = 0; }
   }
+  if (r.fly > 0) { r.h += (2.6 - r.h) * Math.min(1, dt * 6); r.vh = 0; }
   // looping bonus: crossing the ceiling
   if (Math.abs(r.th) > 2.6 && !r.top) { r.top = true; score(75, rPos(r), '¡Looping!', false, 'big'); SFX.ding(); J.slow(0.45); }
   if (Math.abs(r.th) < 1.2) r.top = false;
@@ -1115,6 +1199,11 @@ function stepRider(r, dt) {
       for (const sec of o.sectors) {
         if (Math.abs(angDiff(r.th, sec.c + o.phi)) < sec.hw + (r.r / TR) * 0.7 && r.h < o.h - 0.1) {
           if (r.smash > 0) { breakObstacle(o, r); break; }
+          if (r.spinT > 0) break;
+          if (r.bouncy > 0) {
+            if (o.bouncedBy !== r) { o.bouncedBy = r; r.v *= 0.55; r.om = -r.om * 1.2 + (angDiff(r.th, sec.c + o.phi) > 0 ? 3 : -3); score(30, rPos(r), '¡Boing!'); SFX.boing(1.1); J.hit(0.04, 0.3); }
+            break;
+          }
           crashRider(r); return;
         }
       }
@@ -1123,7 +1212,7 @@ function stepRider(r, dt) {
   // coins
   for (const c of TUN.coins) {
     if (c.taken) continue;
-    const near = r.prevS <= c.s + 0.7 && r.s >= c.s - 0.7 && Math.abs(angDiff(r.th, c.th)) * TR < 0.95 && r.h < 1.3;
+    const near = r.prevS <= c.s + 0.7 && r.s >= c.s - 0.7 && ((Math.abs(angDiff(r.th, c.th)) * TR < 0.95 && r.h < 1.3) || r.spinT > 0 || (r.fly > 0 && Math.abs(angDiff(r.th, c.th)) < 0.8));
     const pull = r.magnet > 0 && c.s - r.s < 14 && c.s - r.s > -2;
     if (near || pull) takeCoin(c);
   }
@@ -1207,6 +1296,15 @@ function tunnelAbility() {
   } else if (r.kind === 'coco') {
     r.smash = 3; r.v += 4; score(60, p, '¡Apisonadora!'); SFX.whoosh(0.6);
     const m = r.mesh; fx.push({ t: 0, dur: 3, upd(k) { m.scale.setScalar(1 + 0.25 * Math.sin(k * Math.PI) * (0.8 + 0.2 * Math.sin(k * 60))); } });
+  } else if (r.kind === 'fresa') {
+    r.grip = 3; score(40, p, '¡Pegajosa!'); SFX.splat(0.5);
+  } else if (r.kind === 'pina') {
+    r.spinT = 1.6; r.spinDir = r.om >= 0 ? 1 : -1; r.v += 6; score(60, p, '¡Torbellino!'); SFX.whoosh(1.3);
+  } else if (r.kind === 'zanahoria') {
+    r.fly = 1.8; r.turbo = 1.8; score(60, p, '¡Cohete!'); SFX.whoosh(1.6); G.fovKick = 10;
+  } else if (r.kind === 'berenjena') {
+    r.bouncy = 3; score(40, p, '¡Rebote!'); SFX.boing(0.6);
+    const m = r.mesh; fx.push({ t: 0, dur: 3, upd(k) { m.scale.setScalar(1 + 0.5 * Math.sin(Math.min(1, k * 6) * Math.PI / 2) * (k < 0.92 ? 1 : (1 - k) / 0.08)); } });
   } else if (r.kind === 'uvas') {
     finishRider(r); world.remove(r.mesh);
     [-0.9, 0, 0.9].forEach(d => {
@@ -1392,6 +1490,9 @@ function killProj(b, splash) {
 }
 function hitProp(b, p, pen) {
   if (p.pop) { popBalloon(p); return; }
+  if (b.rocket > 0) { rocketBoom(b); return; }
+  if (b.sticky) { stick(b); return; }
+  if (b.pierce > 0 && p.state === 'idle') { const v = b.vel.clone().multiplyScalar(0.7); v.y += 4; knock(p, v); return; }
   const sp = b.vel.length();
   if (p.state === 'rest') {
     if (b.mass * sp > p.mass * KN) { p.state = 'fly'; p.vel.copy(b.vel).multiplyScalar(0.6).y += 3; p.still = 0; b.vel.multiplyScalar(0.6); }
@@ -1407,7 +1508,10 @@ function hitProp(b, p, pen) {
   } else onImpact(b, bounce(b, pen, 0.45));
 }
 function onImpact(b, imp) {
+  if (b.rocket > 0 && imp > 0.3) { rocketBoom(b); return; }
+  if (b.sticky && imp > 0.3) { stick(b); return; }
   if (imp < 1.5) return;
+  if (b.kind === 'berenjena' && imp > 3) { b.squash = 1; SFX.boing(0.8); }
   b.bounces++;
   if (b.isSeed) {
     if (imp > 2 && b.bounces <= 6) { G.seedAcc += 3; G.seedPos.copy(b.pos); if (RNG() < 0.3) SFX.tick(); }
@@ -1422,7 +1526,10 @@ function onImpact(b, imp) {
 function stepProj(b, h) {
   b.age += h;
   b.prev.copy(b.pos);
-  b.vel.y -= GRAV * h;
+  if (b.stuck) { b.stuckT -= h; if (b.stuckT <= 0) jamBoom(b); return; }
+  if (b.pierce > 0) b.pierce -= h;
+  if (b.giant > 0) { b.giant -= h; if (b.giant <= 0) { b.r = b.r0; b.mass = b.m0; } }
+  if (b.rocket > 0) { b.rocket -= h; } else b.vel.y -= GRAV * h;
   b.pos.addScaledVector(b.vel, h);
   b.grounded = false;
   for (const pl of platforms) { const pen = probe(pl.col, b.pos, b.r); if (pen > 0) onImpact(b, bounce(b, pen, b.rest)); }
@@ -1466,6 +1573,15 @@ function stepProj(b, h) {
 const ROT = V();
 function projVisual(b, dt) {
   if (b.grow > 0) { b.grow = Math.max(0, b.grow - dt * 4); b.mesh.scale.setScalar(1 - b.grow * (1 - b.growFrom)); }
+  if (b.gs !== undefined) { b.gs += ((b.giant > 0 ? 1.9 : 1) - b.gs) * Math.min(1, dt * 8); b.mesh.scale.setScalar(b.gs); }
+  if (b.squash > 0) { b.squash = Math.max(0, b.squash - dt * 4); const k = Math.sin(b.squash * 18) * b.squash * 0.25; b.mesh.scale.set((b.gs || 1) * (1 + k), (b.gs || 1) * (1 - k), (b.gs || 1) * (1 + k)); }
+  if (b.stuck) return;
+  if (b.rocket > 0) {
+    b.mesh.lookAt(Tv.copy(b.pos).add(b.vel));
+    const m = new THREE.Mesh(GEO.lowSphere, mat(pick([0xffd23f, 0xff8a12, 0xfff8ec]))); m.scale.setScalar(rand(0.06, 0.12));
+    addDebris(m, b.pos.clone().addScaledVector(b.vel, -0.02), b.vel.clone().multiplyScalar(-0.15).add(V(rand(-1, 1), rand(0, 1), rand(-1, 1))), 0.4);
+    return;
+  }
   if (b.grounded && b.vel.lengthSq() > 0.05) {
     ROT.set(b.vel.z, 0, -b.vel.x); const l = ROT.length();
     if (l > 1e-4) b.mesh.rotateOnWorldAxis(ROT.divideScalar(l), l / b.r * dt);
@@ -1491,6 +1607,19 @@ function useAbility() {
   } else if (b.kind === 'coco') {
     b.vel.set(b.vel.x * 0.15, -34, b.vel.z * 0.15); b.pounding = true; b.mass = 5;
     SFX.whoosh(0.6);
+  } else if (b.kind === 'fresa') {
+    b.sticky = true; score(40, b.pos, '¡Pegajosa!'); SFX.pop(0.7);
+  } else if (b.kind === 'pina') {
+    b.pierce = 2; b.mass = 3; score(40, b.pos, '¡Pinchos!'); SFX.whoosh(1.2);
+    const m = b.mesh; fx.push({ t: 0, dur: 2, upd(k) { m.scale.setScalar(1.25 + Math.sin(k * 60) * 0.06); if (k >= 1) m.scale.setScalar(1); } });
+  } else if (b.kind === 'zanahoria') {
+    const d = V(b.vel.x, 0, b.vel.z); if (d.lengthSq() < 0.01) d.set(-Math.sin(aimYaw()), 0, -Math.cos(aimYaw()));
+    d.normalize(); d.y = b.vel.y < 0 ? -0.18 : 0;
+    b.vel.copy(d.normalize().multiplyScalar(32)); b.rocket = 1.5;
+    score(40, b.pos, '¡Cohete!'); SFX.whoosh(1.6); G.fovKick = 8;
+  } else if (b.kind === 'berenjena') {
+    b.r0 = b.r; b.m0 = b.mass; b.r = b.r * 1.9; b.mass *= 4; b.giant = 2.5; b.gs = b.gs || 1;
+    score(40, b.pos, '¡Gigante!'); SFX.boing(0.5);
   } else if (b.kind === 'uvas') {
     killProj(b); world.remove(b.mesh);
     const base = b.vel.clone(); const sp = base.length(); base.normalize();
@@ -1517,7 +1646,28 @@ function explodeMelon(b) {
   score(100, b.pos, '¡Splash!'); SFX.boom(0.7);
   J.hit(0.08, 0.6); J.flash(0.35); buzz(40);
 }
-function shockwave(pos, R) {
+function stick(b) {
+  b.sticky = false; b.stuck = true; b.stuckT = 0.55; b.vel.set(0, 0, 0);
+  popText('¡Pegada!', b.pos, ''); SFX.splat(0.6);
+  const m = b.mesh; fx.push({ t: 0, dur: 0.55, upd(k) { m.scale.setScalar(1 + k * 0.6 + Math.sin(k * 40) * 0.08); } });
+}
+function jamBoom(b) {
+  b.stuck = false;
+  killProj(b); world.remove(b.mesh);
+  burst(b.pos, 0xff2a4d, 22, 7, 0.14); burst(b.pos, 0xff8fa8, 10, 5, 0.1);
+  for (const p of props) {
+    if (p.state !== 'idle') continue;
+    const d = p.pos.distanceTo(b.pos); if (d > 3.4) continue;
+    const v = V().subVectors(p.pos, b.pos).normalize().multiplyScalar(9 * (1 - d / 3.4) + 3); v.y += 5; knock(p, v);
+  }
+  score(90, b.pos, '¡Mermelada!'); SFX.splat(1); J.hit(0.07, 0.5); J.flash(0.25);
+}
+function rocketBoom(b) {
+  b.rocket = 0;
+  killProj(b); world.remove(b.mesh);
+  shockwave(b.pos.clone(), 3.8, '¡Misil!');
+}
+function shockwave(pos, R, label = '¡Plomazo!') {
   const ring = new THREE.Mesh(new THREE.TorusGeometry(1, 0.12, 6, 40), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true }));
   ring.rotation.x = Math.PI / 2; ring.position.copy(pos); world.add(ring);
   fx.push({ t: 0, dur: 0.5, upd(k) { ring.scale.setScalar(0.5 + k * R); ring.material.opacity = 1 - k; if (k >= 1) { world.remove(ring); ring.material.dispose(); } } });
@@ -1530,7 +1680,7 @@ function shockwave(pos, R) {
     if (p.state === 'idle') knock(p, v);
     else if (p.state === 'rest') { p.state = 'fly'; p.vel.copy(v); p.still = 0; }
   }
-  score(80, pos, '¡Plomazo!'); SFX.boom(1);
+  score(80, pos, label); SFX.boom(1);
   J.hit(0.09, 0.9); J.flash(0.5); buzz(60);
 }
 function knock(p, v) {
@@ -1797,6 +1947,23 @@ function levelEnd() {
   [...$('#endStars').children].forEach((s, i) => s.classList.toggle('on', i < stars));
   $('#end').hidden = false;
   SFX.ding();
+  PROG.seen = PROG.seen || [];
+  const fresh = KINDS.filter(k => FRUITS[k].unlock && fruitUnlocked(k) && !PROG.seen.includes(k));
+  if (fresh.length) { PROG.seen.push(...fresh); saveProg(); revealQueue.push(...fresh); setTimeout(nextReveal, 700); }
+}
+const revealQueue = [];
+function nextReveal() {
+  const k = revealQueue.shift(); if (!k) return;
+  const F = FRUITS[k];
+  $('#revealKicker').textContent = F.veg ? 'Nueva verdura desbloqueada' : 'Nueva fruta desbloqueada';
+  const ic = $('#revealIcon'); ic.textContent = F.icon; ic.style.animation = 'none'; void ic.offsetWidth; ic.style.animation = '';
+  $('#revealName').textContent = F.name;
+  $('#revealTag').textContent = F.tag;
+  $('#revealDesc').textContent = F.hint;
+  $('#revealT').textContent = 'En el túnel: ' + F.thint;
+  $('#reveal').hidden = false;
+  SFX.jackpot(); J.confetti(50);
+  $('#revealOk').focus();
 }
 
 /* ---------- starting a level ---------- */
@@ -1810,8 +1977,16 @@ function startLevel(level, tutorial = false, seed = 0) {
   G.state = 'idle';
   if (seed) RNG = mulberry32(seed);
   if (tutorial) genTutorial(); else if (level === 1) genIslands(); else genTunnel();
-  const t = tutorial ? ['platano', 'sandia', 'naranja'] : shuffle(KINDS.slice());
-  if (!tutorial && G.scen >= 3) t.push(pick(KINDS));
+  let t;
+  if (tutorial) t = ['platano', 'sandia', 'naranja'];
+  else {
+    const pool = unlockedKinds(), size = G.scen >= 3 ? 6 : 5;
+    t = shuffle(pool.slice()).slice(0, size);
+    while (t.length < size) t.push(pick(pool));
+    // always bring the newest unlock so it gets played
+    const newest = pool.filter(k => FRUITS[k].unlock).sort((a, b) => FRUITS[b].unlock - FRUITS[a].unlock)[0];
+    if (newest && !t.includes(newest)) t[0] = newest;
+  }
   RNG = Math.random;
   if (G.node) $('#lvlNum').textContent = 'Nivel ' + G.node.n + (G.node.type === 'tunnel' ? ' · Túnel' : ' · Islas');
   G.tray = t; G.used = t.map(() => false); G.sel = 0;
@@ -1900,6 +2075,7 @@ $('#slotGo').addEventListener('click', () => { $('#slot').hidden = true; beginPl
 /* ---------- menus ---------- */
 $('#play').addEventListener('click', () => { audioOn(); goToMenu(); });
 $('#next').addEventListener('click', () => { const nx = G.node ? MAP[G.node.n] : MAP[0]; if (nx) startNode(nx); });
+$('#revealOk').addEventListener('click', () => { $('#reveal').hidden = true; nextReveal(); });
 $('#retry').addEventListener('click', () => { if (G.node) startNode(G.node); });
 $('#toMenu').addEventListener('click', () => {
   $('#end').hidden = true;
