@@ -688,8 +688,14 @@ const unlockedKinds = () => KINDS.filter(fruitUnlocked);
 function currentNode() { for (const m of MAP) if (isUnlocked(m) && !starsOf(m.n)) return m; return MAP.filter(isUnlocked).pop(); }
 
 function disposeTree(o) { o.traverse(c => { if (c.geometry && !SHARED.has(c.geometry)) c.geometry.dispose(); }); }
+function setSunArea(cz, half) {
+  sun.target.position.set(0, 0, cz); sun.position.set(14, 40, cz + 20);
+  Object.assign(sun.shadow.camera, { left: -half, right: half, top: half, bottom: -half, far: 160 });
+  sun.shadow.camera.updateProjectionMatrix();
+}
 function clearWorld() {
   if (world) { scene.remove(world); disposeTree(world); }
+  setSunArea(-26, 38); G.camBox = null;
   world = new THREE.Group(); scene.add(world);
   platforms = []; props = []; bumpers = []; sweepers = []; hoops = []; projectiles = []; debris = []; fx = []; pending = []; decor = [];
   slime = null; TUN = null; title = null;
@@ -1007,14 +1013,14 @@ function target(x, top, z) {
   const ex = 0.9 * Math.abs(Math.cos(ry)) + 0.1, ez = 0.9 * Math.abs(Math.sin(ry)) + 0.1;
   return mkProp('target', g, { t: 'box', min: V(x - ex, top, z - ez), max: V(x + ex, cy + 1.35, z + ez) }, 0.55, 0.8, 250, 'Diana');
 }
-function balloon(x, y, z) {
-  const g = new THREE.Group();
+function balloon(x, y, z, sz = 1) {
+  const g = new THREE.Group(); g.scale.setScalar(sz);
   const c = pick([0xff3d7f, 0x3fb6ff, 0xffd23f, 0xa8f03a, 0xb27bff, 0xff8a12]);
   const b = new THREE.Mesh(GEO.sphere, mat(c, { roughness: 0.25 })); b.scale.set(0.45, 0.55, 0.45); g.add(b);
   const k = new THREE.Mesh(GEO.lowSphere, mat(c)); k.scale.setScalar(0.07); k.position.y = -0.56; g.add(k);
   const str = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 1.3, 4), mat(0xfff8ec)); str.position.y = -1.2; g.add(str);
   g.position.set(x, y, z);
-  return mkProp('balloon', g, { t: 'sph', c: V(x, y, z), r: 0.5 }, 0.5, 0.05, 80, 'Globo', { pop: true, baseY: y, phase: rand(0, 6), color: c });
+  return mkProp('balloon', g, { t: 'sph', c: V(x, y, z), r: 0.5 * sz }, 0.5 * sz, 0.05, 80, 'Globo', { pop: true, baseY: y, phase: rand(0, 6), color: c });
 }
 function bumper(x, top, z) {
   const g = new THREE.Group();
@@ -2293,112 +2299,163 @@ $('#dailyPlay').addEventListener('click', () => { clearInterval(dailyTick); star
 })();
 
 /* ---------- office test map ---------- */
+// Everything in the office is built at real proportions and then scaled up,
+// so a monitor is bigger than a banana and a desk is a proper obstacle.
+const OS = 3;
 const OFFICE = { name: 'Oficina de pruebas', skyTop: '#8fc3ea', skyBot: '#eef4f8', slime: 0x8aa4bf, plats: [0xd8dee6, 0xc9d3de, 0xd8dee6, 0xc9d3de], side: 0x5a6b7d };
+const ROOM = { x: 26, zFront: 8, zBack: -88, h: 16 };
 function carpetMat(w, d) {
   const base = cachedTexMat('carpet', () => canvasTex(64, 64, (g, W, H) => {
     g.fillStyle = '#6f7f95'; g.fillRect(0, 0, W, H);
     g.fillStyle = '#7d8ea5'; g.fillRect(0, 0, W / 2, H / 2); g.fillRect(W / 2, H / 2, W / 2, H / 2);
     for (let i = 0; i < 220; i++) { g.fillStyle = Math.random() < 0.5 ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.1)'; g.fillRect(Math.random() * W, Math.random() * H, 1.5, 1.5); }
   }));
-  const t = base.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(w / 2, d / 2);
+  const t = base.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(w / 4, d / 4);
   return new THREE.MeshStandardMaterial({ map: t, roughness: 0.95 });
 }
-// build a prop from boxes/cylinders laid out around its centre
 function officeGroup(parts) {
   const g = new THREE.Group();
   parts.forEach(([geo, color, x, y, z, opts]) => { const m = new THREE.Mesh(geo, typeof color === 'number' ? mat(color, opts || {}) : color); m.position.set(x, y, z); g.add(m); });
+  g.scale.setScalar(OS);
   return g;
 }
 const B = (w, h, d) => new THREE.BoxGeometry(w, h, d);
 const Cy = (r1, r2, h, n = 14) => new THREE.CylinderGeometry(r1, r2, h, n);
-const boxCol = (x, y0, z, hx, hy, hz) => ({ t: 'box', min: V(x - hx, y0, z - hz), max: V(x + hx, y0 + 2 * hy, z + hz) });
+// collider from real-size half extents; y0 is the floor the thing stands on
+const boxCol = (x, y0, z, hx, hy, hz) => ({ t: 'box', min: V(x - hx * OS, y0, z - hz * OS), max: V(x + hx * OS, y0 + 2 * hy * OS, z + hz * OS) });
 function desk(x, top, z) {
   const g = officeGroup([[B(2, 0.08, 1), 0xd9b38c, 0, 0.37, 0], [B(0.07, 0.72, 0.07), 0x5a6b7d, -0.92, -0.04, -0.42], [B(0.07, 0.72, 0.07), 0x5a6b7d, 0.92, -0.04, -0.42], [B(0.07, 0.72, 0.07), 0x5a6b7d, -0.92, -0.04, 0.42], [B(0.07, 0.72, 0.07), 0x5a6b7d, 0.92, -0.04, 0.42], [B(1.84, 0.4, 0.04), 0xc4a37e, 0, 0.1, -0.44]]);
-  g.position.set(x, top + 0.4, z);
-  return mkProp('desk', g, boxCol(x, top, z, 1, 0.41, 0.5), 0.7, 2.6, 100, 'Mesa', { impactFric: 0.4, rollFric: 3 });
+  g.position.set(x, top + 0.4 * OS, z);
+  return mkProp('desk', g, boxCol(x, top, z, 1, 0.41, 0.5), 0.7 * OS, 4, 100, 'Mesa', { impactFric: 0.4, rollFric: 3 });
 }
 function monitor(x, y0, z) {
   const scr = new THREE.MeshStandardMaterial({ color: 0x3fb6ff, emissive: 0x1d6fae, emissiveIntensity: 0.6, roughness: 0.3 });
   const g = officeGroup([[B(0.72, 0.44, 0.05), 0x22252b, 0, 0.1, 0], [B(0.64, 0.36, 0.01), scr, 0, 0.1, 0.03], [B(0.06, 0.2, 0.06), 0x22252b, 0, -0.17, -0.02], [B(0.26, 0.02, 0.18), 0x22252b, 0, -0.27, -0.02]]);
-  g.position.set(x, y0 + 0.28, z);
-  return mkProp('monitor', g, boxCol(x, y0, z, 0.36, 0.3, 0.12), 0.35, 0.45, 60, 'Monitor');
+  g.position.set(x, y0 + 0.28 * OS, z);
+  return mkProp('monitor', g, boxCol(x, y0, z, 0.36, 0.3, 0.12), 0.35 * OS, 0.9, 60, 'Monitor');
 }
 function mug(x, y0, z) {
   const c = pick([0xff3d7f, 0xffd23f, 0xfff8ec, 0x3fb6ff]);
-  const h = new THREE.Mesh(new THREE.TorusGeometry(0.04, 0.012, 6, 12), mat(c)); h.position.set(0.07, 0, 0);
-  const g = officeGroup([[Cy(0.06, 0.055, 0.12), c, 0, 0, 0], [Cy(0.05, 0.05, 0.01), 0x4a2a14, 0, 0.055, 0]]); g.add(h);
-  g.position.set(x, y0 + 0.06, z);
-  return mkProp('mug', g, { t: 'cyl', x, z, r: 0.08, y0, y1: y0 + 0.12 }, 0.1, 0.08, 20, 'Taza');
+  const g = officeGroup([[Cy(0.06, 0.055, 0.12), c, 0, 0, 0], [Cy(0.05, 0.05, 0.01), 0x4a2a14, 0, 0.055, 0], [new THREE.TorusGeometry(0.04, 0.012, 6, 12), c, 0.07, 0, 0]]);
+  g.position.set(x, y0 + 0.06 * OS, z);
+  return mkProp('mug', g, { t: 'cyl', x, z, r: 0.08 * OS, y0, y1: y0 + 0.12 * OS }, 0.1 * OS, 0.12, 20, 'Taza');
 }
 function papers(x, y0, z) {
   const hh = rand(0.05, 0.18);
   const g = officeGroup([[B(0.3, hh, 0.4), 0xfdfdf8, 0, 0, 0], [B(0.31, 0.01, 0.41), 0xe8ecf2, 0, hh / 2 - 0.02, 0]]);
-  g.position.set(x, y0 + hh / 2, z); g.rotation.y = rand(-0.3, 0.3);
-  return mkProp('papers', g, boxCol(x, y0, z, 0.18, hh / 2, 0.22), 0.2, 0.15, 15, 'Papeles');
+  g.position.set(x, y0 + hh / 2 * OS, z); g.rotation.y = rand(-0.3, 0.3);
+  return mkProp('papers', g, boxCol(x, y0, z, 0.18, hh / 2, 0.22), 0.2 * OS, 0.25, 15, 'Papeles');
 }
 function chair(x, top, z) {
   const parts = [[B(0.52, 0.08, 0.5), 0x2a2f3a, 0, -0.05, 0], [B(0.5, 0.55, 0.07), 0x2a2f3a, 0, 0.27, 0.23], [Cy(0.035, 0.035, 0.35), 0x9aa6b2, 0, -0.27, 0]];
   for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; parts.push([B(0.05, 0.04, 0.28), 0x9aa6b2, Math.sin(a) * 0.13, -0.45, Math.cos(a) * 0.13]); }
   const g = officeGroup(parts); g.children.slice(3).forEach((m, i) => m.rotation.y = i / 5 * Math.PI * 2);
-  g.position.set(x, top + 0.5, z); g.rotation.y = rand(-0.4, 0.4);
-  return mkProp('chair', g, boxCol(x, top, z, 0.3, 0.53, 0.3), 0.45, 0.8, 50, 'Silla');
+  g.position.set(x, top + 0.5 * OS, z); g.rotation.y = rand(-0.4, 0.4);
+  return mkProp('chair', g, boxCol(x, top, z, 0.3, 0.53, 0.3), 0.45 * OS, 1.3, 50, 'Silla');
 }
 function cooler(x, top, z) {
   const bottle = new THREE.MeshStandardMaterial({ color: 0x7fd3ff, transparent: true, opacity: 0.75, roughness: 0.1 });
   const g = officeGroup([[B(0.42, 0.9, 0.42), 0xf2f4f7, 0, -0.23, 0], [Cy(0.17, 0.17, 0.46), bottle, 0, 0.45, 0], [Cy(0.06, 0.06, 0.06), 0x3fb6ff, 0, 0.7, 0], [B(0.08, 0.05, 0.06), 0x3fb6ff, 0, -0.05, 0.23]]);
-  g.position.set(x, top + 0.68, z);
-  return mkProp('cooler', g, boxCol(x, top, z, 0.22, 0.68, 0.22), 0.45, 1.1, 80, 'Fuente');
+  g.position.set(x, top + 0.68 * OS, z);
+  return mkProp('cooler', g, boxCol(x, top, z, 0.22, 0.68, 0.22), 0.45 * OS, 1.6, 80, 'Fuente');
 }
 function plant(x, top, z) {
   const parts = [[Cy(0.22, 0.17, 0.36), 0xc9673e, 0, -0.27, 0]];
   for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; parts.push([GEO.sphere, 0x3f9a4a, Math.cos(a) * 0.14, 0.05 + (i % 2) * 0.12, Math.sin(a) * 0.14]); }
   parts.push([GEO.sphere, 0x56b85a, 0, 0.32, 0]);
   const g = officeGroup(parts); g.children.slice(1).forEach(m => m.scale.setScalar(rand(0.13, 0.19)));
-  g.position.set(x, top + 0.45, z);
-  return mkProp('plant', g, { t: 'cyl', x, z, r: 0.25, y0: top, y1: top + 0.95 }, 0.4, 0.6, 40, 'Planta');
+  g.position.set(x, top + 0.45 * OS, z);
+  return mkProp('plant', g, { t: 'cyl', x, z, r: 0.25 * OS, y0: top, y1: top + 0.95 * OS }, 0.4 * OS, 1, 40, 'Planta');
 }
 function cabinet(x, top, z) {
   const parts = [[B(0.6, 1.3, 0.6), 0x9aa6b2, 0, 0, 0]];
   for (let i = 0; i < 3; i++) { parts.push([B(0.54, 0.02, 0.01), 0x5a6b7d, 0, 0.42 - i * 0.42 + 0.2, 0.305]); parts.push([B(0.16, 0.04, 0.03), 0x3b4552, 0, 0.42 - i * 0.42, 0.31]); }
   const g = officeGroup(parts);
-  g.position.set(x, top + 0.65, z);
-  return mkProp('cabinet', g, boxCol(x, top, z, 0.3, 0.65, 0.3), 0.6, 2.2, 90, 'Archivador', { impactFric: 0.4, rollFric: 3 });
+  g.position.set(x, top + 0.65 * OS, z);
+  return mkProp('cabinet', g, boxCol(x, top, z, 0.3, 0.65, 0.3), 0.6 * OS, 3.5, 90, 'Archivador', { impactFric: 0.4, rollFric: 3 });
 }
 function printer(x, top, z) {
   const g = officeGroup([[B(0.6, 0.55, 0.45), 0x3b4552, 0, -0.17, 0], [B(0.7, 0.3, 0.5), 0xe6e9ee, 0, 0.25, 0], [B(0.5, 0.02, 0.25), 0xfdfdf8, 0, 0.41, 0.12], [B(0.08, 0.03, 0.02), 0xa8f03a, 0.25, 0.3, 0.26]]);
-  g.position.set(x, top + 0.45, z);
-  return mkProp('printer', g, boxCol(x, top, z, 0.35, 0.45, 0.25), 0.5, 1.4, 70, 'Impresora');
+  g.position.set(x, top + 0.45 * OS, z);
+  return mkProp('printer', g, boxCol(x, top, z, 0.35, 0.45, 0.25), 0.5 * OS, 2, 70, 'Impresora');
 }
 function partition(x, top, z, alongZ) {
   const g = officeGroup([[alongZ ? B(0.08, 1.3, 2) : B(2, 1.3, 0.08), 0x7a8fa6, 0, 0, 0, { roughness: 1 }], [alongZ ? B(0.1, 0.06, 2.02) : B(2.02, 0.06, 0.1), 0x5a6b7d, 0, 0.66, 0]]);
-  g.position.set(x, top + 0.65, z);
-  return mkProp('partition', g, alongZ ? boxCol(x, top, z, 0.05, 0.65, 1) : boxCol(x, top, z, 1, 0.65, 0.05), 0.6, 1.3, 60, 'Mampara');
+  g.position.set(x, top + 0.65 * OS, z);
+  return mkProp('partition', g, alongZ ? boxCol(x, top, z, 0.05, 0.65, 1) : boxCol(x, top, z, 1, 0.65, 0.05), 0.6 * OS, 2.2, 60, 'Mampara');
+}
+// a solid piece of the building: drawn, and collided with like a platform
+function solid(x0, y0, z0, x1, y1, z1, material) {
+  const m = new THREE.Mesh(B(x1 - x0, y1 - y0, z1 - z0), material);
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); m.receiveShadow = true;
+  world.add(m);
+  platforms.push({ cx: m.position.x, cz: m.position.z, w: x1 - x0, d: z1 - z0, top: y1, col: { t: 'box', min: V(x0, y0, z0), max: V(x1, y1, z1) } });
+  return m;
+}
+const windowMat = () => cachedTexMat('window', () => new THREE.MeshBasicMaterial({ map: canvasTex(256, 180, (g, w, h) => {
+  const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#5fb2f2'); gr.addColorStop(1, '#d9efff'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  g.fillStyle = 'rgba(255,255,255,.9)'; [[60, 60, 26], [90, 52, 30], [120, 62, 22], [190, 110, 18], [214, 104, 24]].forEach(([x, y, r]) => { g.beginPath(); g.arc(x, y, r, 0, 6.3); g.fill(); });
+  g.fillStyle = 'rgba(120,150,180,.55)'; for (let i = 0; i < 6; i++) g.fillRect(i * 44 + 6, h - 40 - (i % 3) * 18, 34, 60);
+  g.strokeStyle = '#5a6b7d'; g.lineWidth = 12; g.strokeRect(6, 6, w - 12, h - 12); g.lineWidth = 7; g.beginPath(); g.moveTo(w / 2, 0); g.lineTo(w / 2, h); g.moveTo(0, h / 2); g.lineTo(w, h / 2); g.stroke();
+}) }));
+const logoMat = () => cachedTexMat('logo', () => new THREE.MeshBasicMaterial({ transparent: true, map: canvasTex(1024, 300, (g, w, h) => {
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h); g.strokeStyle = '#2a1650'; g.lineWidth = 16; g.strokeRect(8, 8, w - 16, h - 16);
+  g.textAlign = 'center'; g.fillStyle = '#ff3d7f'; g.font = '150px "Titan One", "Arial Black", sans-serif'; g.fillText('FRUIT CORP', w / 2, 170);
+  g.fillStyle = '#4b2d86'; g.font = 'bold 54px "Baloo 2", "Trebuchet MS", sans-serif'; g.fillText('Exprimimos tu potencial', w / 2, 248);
+}) }));
+function buildRoom() {
+  const { x: X, zFront: ZF, zBack: ZB, h: Hh } = ROOM;
+  const wallM = mat(0xeef1f5, { roughness: 0.9 }), ceilM = mat(0xf7f8fa, { roughness: 1 }), baseM = mat(0x5a6b7d);
+  addPlatform(0, 0, (ZF + ZB) / 2, 2 * X, ZF - ZB, 0xc9d3de, OFFICE, carpetMat(2 * X, ZF - ZB));
+  solid(-X - 1, 0, ZB, -X, Hh, ZF, wallM); solid(X, 0, ZB, X + 1, Hh, ZF, wallM);
+  solid(-X - 1, 0, ZB - 1, X + 1, Hh, ZB, wallM); solid(-X - 1, 0, ZF, X + 1, Hh, ZF + 1, wallM);
+  solid(-X - 1, Hh, ZB - 1, X + 1, Hh + 1, ZF + 1, ceilM);
+  // skirting boards
+  [[-X + 0.1, 0.3, (ZF + ZB) / 2, 0.2, 0.6, ZF - ZB], [X - 0.1, 0.3, (ZF + ZB) / 2, 0.2, 0.6, ZF - ZB], [0, 0.3, ZB + 0.1, 2 * X, 0.6, 0.2]].forEach(([x, y, z, w, h, d]) => { const m = new THREE.Mesh(B(w, h, d), baseM); m.position.set(x, y, z); world.add(m); });
+  // windows on both sides
+  for (let z = ZF - 16; z > ZB + 6; z -= 18) [-1, 1].forEach(side => {
+    const w = new THREE.Mesh(new THREE.PlaneGeometry(12, 7.5), windowMat());
+    w.position.set(side * (X - 0.02), 8, z); w.rotation.y = -side * Math.PI / 2; world.add(w);
+  });
+  // ceiling lights
+  for (let z = ZF - 12; z > ZB + 4; z -= 16) for (const x of [-14, 0, 14]) {
+    const l = new THREE.Mesh(B(6, 0.12, 1.4), new THREE.MeshBasicMaterial({ color: 0xfffdf2 })); l.position.set(x, Hh - 0.07, z); world.add(l);
+  }
+  const logo = new THREE.Mesh(new THREE.PlaneGeometry(18, 5.3), logoMat()); logo.position.set(0, 10.5, ZB + 0.03); world.add(logo);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { const t = logo.material.map; t.userData.draw(t.userData.canvas.getContext('2d'), 1024, 300); t.needsUpdate = true; });
+  // the reception counter you stand on
+  const counterM = mat(0xc4a37e, { roughness: 0.7 }), counterTop = mat(0xf2f4f7, { roughness: 0.4 });
+  solid(-5, 0, -2, 5, 3.3, 3, counterM);
+  const top = new THREE.Mesh(B(10.4, 0.2, 5.4), counterTop); top.position.set(0, 3.4, 0.5); world.add(top);
+  platforms[platforms.length - 1].col.max.y = 3.5;
+  G.camBox = { min: V(-X + 1.5, 1, ZB + 1.5), max: V(X - 1.5, Hh - 1.5, ZF - 1) };
 }
 function genOffice() {
   clearWorld();
   const theme = G.theme = OFFICE;
-  setSky(theme); makeSlime(theme); bigDecor(theme);
-  addPlatform(0, 0, 1.2, 5, 6.5, 0xd8dee6, theme);
-  addPlatform(0, 0, -25, 22, 38, 0xc9d3de, theme, carpetMat(22, 38));
-  [-12, -21, -30].forEach((z, row) => {
-    [-6, 0, 6].forEach((x, col) => {
-      const d = desk(x, 0, z);
-      const items = [monitor(x + rand(-0.3, 0.3), 0.81, z - 0.15)];
-      if (RNG() < 0.7) items.push(mug(x + 0.72, 0.81, z + 0.22));
-      if (RNG() < 0.7) items.push(papers(x - 0.66, 0.81, z + 0.12));
+  setSky(theme);
+  scene.fog = new THREE.Fog(0xeef4f8, 90, 260);
+  setSunArea(-40, 56);
+  buildRoom();
+  [-22, -44, -66].forEach(z => {
+    [-16, 0, 16].forEach(x => {
+      const d = desk(x, 0, z), y0 = 0.81 * OS;
+      const items = [monitor(x + rand(-1, 1), y0, z - 0.5)];
+      if (RNG() < 0.75) items.push(mug(x + 2.1, y0, z + 0.7));
+      if (RNG() < 0.75) items.push(papers(x - 2, y0, z + 0.4));
       d.above.push(...items);
-      chair(x + rand(-0.2, 0.2), 0, z + 1.05);
+      chair(x + rand(-0.6, 0.6), 0, z + 3.2);
     });
-    [-3, 3].forEach(x => partition(x, 0, z - 0.1, true));
+    [-8, 8].forEach(x => partition(x, 0, z - 0.3, true));
   });
-  cooler(-9.6, 0, -9); cooler(9.6, 0, -26);
-  [[-9.6, -16], [9.6, -15], [-9.6, -34], [9.6, -36], [-9.6, -26]].forEach(([x, z]) => plant(x, 0, z));
-  [-8, -6.6, 6.6, 8].forEach(x => { const c = cabinet(x, 0, -41.5); c.above.push(papers(x, 1.32, -41.5)); });
-  printer(0, 0, -41.5);
-  partition(-2.2, 0, -39.4, false); partition(2.2, 0, -39.4, false);
+  cooler(-24, 0, -12); cooler(24, 0, -52);
+  [[-24, -30], [24, -24], [-24, -76], [24, -80], [-24, -56]].forEach(([x, z]) => plant(x, 0, z));
+  [-21, -17, 17, 21].forEach(x => { const c = cabinet(x, 0, -85.5); c.above.push(papers(x, 1.3 * OS, -85.5)); });
+  printer(0, 0, -85.5);
+  partition(-6.5, 0, -79, false); partition(6.5, 0, -79, false);
   // somebody's birthday
-  for (let i = 0; i < 5; i++) balloon(-1.6 + i * 0.8, 3 + (i % 2) * 0.5, -36);
-  G.pov = { pos: CAM_POS.clone(), yaw0: 0, pitch: -0.1 };
+  for (let i = 0; i < 6; i++) balloon(-6 + i * 2.4, 8 + (i % 2) * 1.2, -72, 2.6);
+  G.pov = { pos: V(0, 3.5 + 1.6, 0.4), yaw0: 0, pitch: -0.16 };
 }
 
 function genSandbox() {
@@ -2821,6 +2878,7 @@ function updateCamera(dt) {
     if (f) {
       if (f.vel.x * f.vel.x + f.vel.z * f.vel.z > 4) { Tv.set(f.vel.x, 0, f.vel.z).normalize(); G.lastDir.lerp(Tv, 1 - Math.exp(-1.5 * dt)).normalize(); }
       camTgt.copy(f.pos).addScaledVector(G.lastDir, -6.5); camTgt.y = Math.max(f.pos.y + 2.6, SLIME_Y + 2.5);
+      if (G.camBox) camTgt.clamp(G.camBox.min, G.camBox.max);
       camera.position.lerp(camTgt, 1 - Math.exp(-2.6 * dt));
       G.lookAt.lerp(f.pos, 1 - Math.exp(-7 * dt));
     }
