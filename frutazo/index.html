@@ -106,23 +106,41 @@ body {
 .cta p { margin: 0; font-weight: 800; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; }
 .cta .btn { animation: bob 1.4s ease-in-out infinite; }
 
-/* level menu */
-#menu { align-items: center; }
-.menu { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 14px; }
-.menu h2 { margin: 0 0 4px; font-family: var(--display); font-weight: 400; font-size: 36px; text-align: center; line-height: 1; }
-.lvcard { pointer-events: auto; display: grid; grid-template-columns: 58px 1fr; gap: 12px; align-items: center; text-align: left; width: 100%; background: var(--cream); color: var(--ink); border: 4px solid var(--ink); border-radius: 22px; box-shadow: 0 6px 0 var(--ink); padding: 12px 14px; cursor: pointer; font: inherit; transition: transform .12s; }
-.lvcard:hover { transform: translateY(-2px) rotate(-.6deg); }
-.lvcard:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--ink); }
-.lvnum { width: 58px; height: 58px; border-radius: 18px; border: 3px solid var(--ink); display: grid; place-items: center; font-family: var(--display); font-size: 30px; color: var(--cream); text-shadow: 0 2px 0 var(--ink); }
-.lvcard:nth-of-type(1) .lvnum { background: var(--candy); }
-.lvcard:nth-of-type(2) .lvnum { background: #3fb6ff; }
-.lvtext { min-width: 0; display: flex; flex-direction: column; }
-.lvtext b { font-family: var(--display); font-weight: 400; font-size: 21px; line-height: 1.05; }
-.lvtext span { font-weight: 600; font-size: 13.5px; line-height: 1.25; }
-.lvtext small { margin-top: 4px; font-weight: 800; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
-.lvcard.locked { cursor: default; opacity: .72; box-shadow: 0 4px 0 var(--ink); background: #e6dcf5; }
-.lvcard.locked:hover { transform: none; }
-.lvcard.locked .lvnum { background: var(--ink-2); }
+/* level map */
+#menu { display: block; padding: 0; overflow-y: auto; overscroll-behavior: contain; scroll-behavior: smooth; }
+.mapbar { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) calc(64px + env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px));
+  background: linear-gradient(180deg, rgba(42,22,80,.55), rgba(42,22,80,0)); }
+.mapbar b { font-family: var(--display); font-weight: 400; font-size: 32px; line-height: 1; }
+.startot { display: flex; align-items: center; gap: 6px; font-family: var(--display); font-size: 20px; font-variant-numeric: tabular-nums; background: var(--ink); border-radius: 99px; padding: 4px 14px 4px 8px; text-shadow: none; }
+.startot i, .nstars i, .gate i { display: inline-block; background: var(--peel); clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+.startot i { width: 22px; height: 22px; }
+.map { position: relative; margin: 0 auto; max-width: 420px; }
+.map svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.node { position: absolute; width: 70px; height: 70px; margin: -35px 0 0 -35px; border-radius: 50%; border: 4px solid var(--ink); box-shadow: 0 6px 0 var(--ink); background: var(--candy); color: var(--cream); font-family: var(--display); font-size: 28px; line-height: 1; cursor: pointer; display: grid; place-items: center; text-shadow: 0 2px 0 var(--ink); padding: 0; transition: transform .12s; }
+.node.tunnel { background: #3fb6ff; }
+.node:hover { transform: scale(1.06); }
+.node:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--ink); }
+.node:focus-visible { outline: 3px solid var(--lime); outline-offset: 4px; }
+.node.locked { background: #b9acd3; color: var(--ink-2); text-shadow: none; cursor: default; box-shadow: 0 4px 0 var(--ink); }
+.node.locked:hover { transform: none; }
+.node.locked svg { width: 32px; height: 32px; display: block; }
+.node.current::after { content: ""; position: absolute; inset: -12px; border-radius: 50%; border: 4px solid var(--peel); animation: ring 1.2s ease-out infinite; }
+.node.fresh { animation: pop .6s cubic-bezier(.3,1.8,.5,1) .35s backwards; }
+.node .kind { position: absolute; top: -8px; right: -10px; width: 28px; height: 28px; border-radius: 50%; background: var(--cream); border: 3px solid var(--ink); display: grid; place-items: center; }
+.node .kind svg { width: 20px; height: 20px; display: block; }
+.node.shake { animation: shake .35s; }
+.nstars { position: absolute; transform: translate(-50%, 0); display: flex; gap: 2px; pointer-events: none; }
+.nstars i { width: 19px; height: 19px; background: rgba(42,22,80,.45); }
+.nstars i.on { background: var(--peel); filter: drop-shadow(0 2px 0 var(--ink)); }
+.gate { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); transform: translateY(-50%); display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 14px; border-radius: 16px; border: 4px solid var(--ink); background: repeating-linear-gradient(-45deg, var(--peel) 0 14px, #ffe27a 14px 28px); color: var(--ink); font-family: var(--display); font-size: 17px; box-shadow: 0 5px 0 var(--ink); }
+.gate i { width: 20px; height: 20px; background: var(--ink); }
+.gate.open { background: var(--lime); }
+.gate small { font-family: var(--body); font-weight: 800; font-size: 13px; }
+.maptoast { position: sticky; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 3; margin: 0 auto; width: fit-content; max-width: calc(100% - 32px); background: var(--ink); color: var(--cream); border-radius: 99px; padding: 8px 16px; font-weight: 800; font-size: 14px; text-align: center; }
+@keyframes ring { from { transform: scale(.85); opacity: 1; } to { transform: scale(1.3); opacity: 0; } }
+@keyframes pop { from { transform: scale(0) rotate(-20deg); } }
+@keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
 
 /* slot machine */
 .slot { width: 100%; max-width: 340px; margin: auto; position: relative; background: linear-gradient(180deg, #ff6a9e, var(--candy) 40%, #d81f63); border: 4px solid var(--ink); border-radius: 36px 36px 22px 22px; box-shadow: 0 8px 0 var(--ink); padding: 16px 16px 18px; display: flex; flex-direction: column; gap: 12px; color: var(--cream); }
@@ -197,21 +215,9 @@ body {
   </div>
 
   <div class="overlay clear" id="menu" hidden>
-    <div class="menu">
-      <h2 class="outline">Elige nivel</h2>
-      <button class="lvcard" id="lv1" type="button">
-        <span class="lvnum">1</span>
-        <span class="lvtext"><b>Islas Flotantes</b><span>Plataformas absurdas llenas de cajas, bolos, patos y tartas para derribar.</span><small id="lv1best">Sin jugar todavía</small></span>
-      </button>
-      <button class="lvcard" id="lv2" type="button">
-        <span class="lvnum">2</span>
-        <span class="lvtext"><b>Túnel Rodante</b><span>Patina por las paredes de un tubo gigante, esquiva obstáculos y llega a la meta.</span><small id="lv2best">Sin jugar todavía</small></span>
-      </button>
-      <div class="lvcard locked" aria-disabled="true">
-        <span class="lvnum">3</span>
-        <span class="lvtext"><b>Próximamente</b><span>Más fruta, más verdura y más caos.</span></span>
-      </div>
-    </div>
+    <div class="mapbar outline"><b>Mapa</b><span class="startot" aria-label="Estrellas conseguidas"><i></i><span id="starTotal">0 / 0</span></span></div>
+    <div class="map" id="map"></div>
+    <div class="maptoast" id="mapToast" hidden></div>
   </div>
 
   <div class="overlay" id="slot" hidden>
@@ -243,9 +249,10 @@ body {
         <span>Récord del nivel</span><b id="endBest">0</b>
       </div>
       <div class="btnrow">
-        <button class="btn alt" id="toMenu">Niveles</button>
-        <button class="btn" id="next">Otra vez</button>
+        <button class="btn alt" id="toMenu">Mapa</button>
+        <button class="btn alt" id="retry">Reintentar</button>
       </div>
+      <button class="btn" id="next">Siguiente nivel</button>
     </div>
   </div>
 </div>
@@ -256,11 +263,14 @@ body {
 'use strict';
 const $ = s => document.querySelector(s);
 const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
-const rand = (a, b) => a + Math.random() * (b - a);
+// Level layouts are generated from a seed so each map node is always the same place.
+let RNG = Math.random;
+const mulberry32 = a => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const rand = (a, b) => a + RNG() * (b - a);
 const randi = (a, b) => Math.floor(rand(a, b + 1));
-const pick = a => a[Math.floor(Math.random() * a.length)];
+const pick = a => a[Math.floor(RNG() * a.length)];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(RNG() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 const smooth = k => k * k * (3 - 2 * k);
 
@@ -469,8 +479,19 @@ const J = {
     }
   },
 };
-function loadBest(l) { try { return JSON.parse(localStorage.getItem('fruitparty-best-' + l)) || { score: 0, stars: 0 }; } catch (e) { return { score: 0, stars: 0 }; } }
-function saveBest(l, v) { try { localStorage.setItem('fruitparty-best-' + l, JSON.stringify(v)); } catch (e) {} }
+// The map: every third node is a tunnel; gates need a number of stars collected so far.
+const GATES = { 7: 12, 13: 27, 19: 42 };
+const MAP = Array.from({ length: 24 }, (_, i) => {
+  const n = i + 1;
+  return { n, type: n % 3 === 0 ? 'tunnel' : 'islands', seed: 7919 * n + 1013, diff: 1 + Math.floor(i / 4), gate: GATES[n] || 0 };
+});
+function loadProg() { try { const p = JSON.parse(localStorage.getItem('fruitparty-map')); if (p && p.stars) return p; } catch (e) {} return { stars: {}, best: {} }; }
+const PROG = loadProg();
+function saveProg() { try { localStorage.setItem('fruitparty-map', JSON.stringify(PROG)); } catch (e) {} }
+const starsOf = n => PROG.stars[n] || 0;
+const totalStars = () => MAP.reduce((a, m) => a + starsOf(m.n), 0);
+const isUnlocked = node => node.n === 1 || (starsOf(node.n - 1) >= 1 && totalStars() >= node.gate);
+function currentNode() { for (const m of MAP) if (isUnlocked(m) && !starsOf(m.n)) return m; return MAP.filter(isUnlocked).pop(); }
 
 function disposeTree(o) { o.traverse(c => { if (c.geometry && !SHARED.has(c.geometry)) c.geometry.dispose(); }); }
 function clearWorld() {
@@ -610,15 +631,71 @@ function goToMenu() {
   const y0 = L.position.y;
   fx.push({ t: 0, dur: 0.9, upd(k) { const e = smooth(k); L.position.y = y0 + e * 9; L.scale.setScalar(1 + e * 0.6); L.material.opacity = 1 - e; if (k >= 1) L.visible = false; } });
 }
+const ICON_ISLAND = '<svg viewBox="0 0 16 16"><path d="M1 7h14l-2 3H3z" fill="#ff3d7f" stroke="#2a1650" stroke-width="1.6" stroke-linejoin="round"/><path d="M7 10h2v5H7z" fill="#2a1650"/><rect x="5" y="3" width="3" height="4" fill="#ffd23f" stroke="#2a1650" stroke-width="1.2"/></svg>';
+const ICON_TUNNEL = '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="#3fb6ff" stroke="#2a1650" stroke-width="1.8"/><circle cx="8" cy="9" r="2.6" fill="#2a1650"/></svg>';
+const ICON_LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+const SP = 118, TOP_PAD = 90, BOT_PAD = 120;
+function nodeXY(i) { return { x: 50 + Math.sin(i * 1.05) * 27, y: TOP_PAD + (MAP.length - 1 - i) * SP }; }
+function renderMap() {
+  const map = $('#map');
+  const H = TOP_PAD + (MAP.length - 1) * SP + BOT_PAD;
+  map.style.height = H + 'px';
+  const pts = MAP.map((_, i) => nodeXY(i));
+  // smooth path through the nodes, drawn in a 0-100 x 0-H box
+  let d = `M${pts[0].x} ${pts[0].y + 80}L${pts[0].x} ${pts[0].y}`;
+  for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i], my = (a.y + b.y) / 2; d += `C${a.x} ${my} ${b.x} ${my} ${b.x} ${b.y}`; }
+  let lastOpen = 0; MAP.forEach((m, i) => { if (isUnlocked(m)) lastOpen = i; });
+  const openY = pts[lastOpen].y;
+  let html = `<svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" aria-hidden="true">
+    <path d="${d}" fill="none" stroke="#2a1650" stroke-width="22" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    <path d="${d}" fill="none" stroke="#fff8ec" stroke-width="14" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    <clipPath id="openClip"><rect x="-10" y="${openY}" width="120" height="${H}"/></clipPath>
+    <path d="${d}" fill="none" stroke="#ffd23f" stroke-width="14" stroke-linecap="round" vector-effect="non-scaling-stroke" clip-path="url(#openClip)"/>
+    <path d="${d}" fill="none" stroke="#2a1650" stroke-width="3" stroke-dasharray="2 14" stroke-linecap="round" vector-effect="non-scaling-stroke" opacity=".35"/>
+  </svg>`;
+  const tot = totalStars(), cur = currentNode();
+  MAP.forEach((m, i) => {
+    const { x, y } = pts[i];
+    const open = isUnlocked(m), st = starsOf(m.n);
+    if (m.gate) {
+      const gy = (y + pts[i - 1].y) / 2, ok = tot >= m.gate;
+      html += `<div class="gate${ok ? ' open' : ''}" style="top:${gy}px"><i></i>${ok ? 'Puerta abierta' : 'Necesitas ' + m.gate}<small>${ok ? '' : 'tienes ' + tot}</small></div>`;
+    }
+    const cls = ['node', m.type, open ? '' : 'locked', cur && cur.n === m.n && open ? 'current' : '', G.justUnlocked === m.n ? 'fresh' : ''].join(' ');
+    const label = `Nivel ${m.n}, ${m.type === 'tunnel' ? 'túnel' : 'islas'}${open ? ', ' + st + ' de 3 estrellas' : ', bloqueado'}`;
+    html += `<button type="button" class="${cls}" id="node-${m.n}" data-n="${m.n}" style="left:${x}%;top:${y}px" aria-label="${label}">${open ? m.n : ICON_LOCK}${open ? '<span class="kind">' + (m.type === 'tunnel' ? ICON_TUNNEL : ICON_ISLAND) + '</span>' : ''}</button>`;
+    if (open) html += `<div class="nstars" style="left:${x}%;top:${y + 42}px">${[0, 1, 2].map(k => `<i class="${k < st ? 'on' : ''}"></i>`).join('')}</div>`;
+  });
+  map.innerHTML = html;
+  $('#starTotal').textContent = tot + ' / ' + MAP.length * 3;
+  G.justUnlocked = 0;
+  const target = cur ? pts[cur.n - 1].y : H;
+  const menu = $('#menu');
+  menu.style.scrollBehavior = 'auto';
+  menu.scrollTop = Math.max(0, target - menu.clientHeight * 0.55);
+  menu.style.scrollBehavior = '';
+}
+let toastT = 0;
+function mapToast(msg) {
+  const t = $('#mapToast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 2200);
+}
+$('#map').addEventListener('click', e => {
+  const b = e.target.closest('.node'); if (!b) return;
+  audioOn();
+  const node = MAP[+b.dataset.n - 1];
+  if (isUnlocked(node)) { SFX.tick(); startNode(node); return; }
+  b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
+  SFX.thunk(0.5);
+  if (starsOf(node.n - 1) < 1) mapToast('Consigue al menos 1 estrella en el nivel ' + (node.n - 1));
+  else mapToast('Necesitas ' + node.gate + ' estrellas para pasar esta puerta. Tienes ' + totalStars() + '.');
+});
 function showMenu() {
   G.mode = 'menu'; G.state = 'idle';
   $('#hud').hidden = true;
   $('#mute').classList.add('corner');
-  [1, 2].forEach(l => {
-    const b = loadBest(l);
-    $('#lv' + l + 'best').textContent = b.score ? 'Récord ' + b.score.toLocaleString('es-ES') + ' · ' + '★'.repeat(b.stars) + '☆'.repeat(3 - b.stars) : 'Sin jugar todavía';
-  });
   $('#menu').hidden = false;
+  renderMap();
 }
 
 /* =====================================================================
@@ -664,7 +741,7 @@ function crate(x, y, z, color) {
 function tower(x, top, z, cell, theme) {
   const cols = theme.plats.concat([0xff3d7f, 0x3fb6ff]);
   const made = [];
-  const kind = cell.w >= 3.4 && Math.random() < 0.5 ? 'pyramid' : (cell.w >= 2.4 && cell.d >= 2.4 ? 'block' : 'column');
+  const kind = cell.w >= 3.4 && RNG() < 0.5 ? 'pyramid' : (cell.w >= 2.4 && cell.d >= 2.4 ? 'block' : 'column');
   if (kind === 'pyramid') {
     const n = cell.w >= 4.2 ? 4 : 3;
     for (let l = 0; l < n; l++) for (let i = 0; i < n - l; i++) made.push(crate(x + (i - (n - l - 1) / 2) * 1.0, top + 0.48 + l * 0.97, z, pick(cols)));
@@ -788,7 +865,7 @@ function makeSlime(theme) {
   world.add(slime);
 }
 function populate(pl, theme) {
-  if (pl.w >= 6.5 && pl.d >= 6 && Math.random() < 0.28) { sweeper(pl, theme); return; }
+  if (pl.w >= 6.5 && pl.d >= 6 && RNG() < 0.28) { sweeper(pl, theme); return; }
   const n = pl.w * pl.d > 62 ? 3 : (pl.w * pl.d > 30 ? 2 : 1);
   const cells = [];
   if (pl.w >= pl.d) { const cw = pl.w / n; for (let i = 0; i < n; i++) cells.push({ x: pl.cx - pl.w / 2 + cw * (i + 0.5), z: pl.cz, w: cw - 0.4, d: pl.d - 0.8 }); }
@@ -808,8 +885,7 @@ function populate(pl, theme) {
 }
 function genIslands() {
   clearWorld();
-  let ti; do { ti = randi(0, THEMES.length - 1); } while (ti === G.lastTheme && THEMES.length > 1);
-  G.lastTheme = ti;
+  const ti = randi(0, THEMES.length - 1);
   const theme = G.theme = THEMES[ti];
   setSky(theme);
   makeSlime(theme);
@@ -818,7 +894,7 @@ function genIslands() {
   const rowsZ = [-14 - rand(0, 3), -25 - rand(0, 4), -37 - rand(0, 5)];
   if (G.scen >= 3) rowsZ.push(-50 - rand(0, 4));
   rowsZ.forEach((z, i) => {
-    const two = Math.random() < 0.55;
+    const two = RNG() < 0.55;
     (two ? [-1, 1] : [0]).forEach(sx => {
       const w = two ? rand(5.5, 8) : rand(7, 11), d = rand(5.5, 8.5);
       const x = two ? sx * rand(w / 2 + 1.5, w / 2 + 5) : rand(-4, 4);
@@ -896,7 +972,7 @@ function sectorGeo(hw, r1, r0, depth) {
 }
 function genTunnel() {
   clearWorld();
-  const th = G.theme = TUNNEL_THEMES[(G.scen - 1) % TUNNEL_THEMES.length];
+  const th = G.theme = pick(TUNNEL_THEMES);
   setSky(th);
   bigDecor(null);
   const pts = [V(0, 0, 14), V(0, 0, 0), V(0, -0.6, -16)];
@@ -942,7 +1018,7 @@ function genTunnel() {
     if (s > TUN.sMeta - 20) break;
     addObstacle(s, nObs++);
     s += rand(14, 22);
-    if (Math.random() < 0.45 && s < TUN.sMeta - 30) { addBoost(s, rand(-0.9, 0.9)); s += 10; }
+    if (RNG() < 0.45 && s < TUN.sMeta - 30) { addBoost(s, rand(-0.9, 0.9)); s += 10; }
   }
   // finish ring and banner
   const meta = new THREE.Group();
@@ -1334,7 +1410,7 @@ function onImpact(b, imp) {
   if (imp < 1.5) return;
   b.bounces++;
   if (b.isSeed) {
-    if (imp > 2 && b.bounces <= 6) { G.seedAcc += 3; G.seedPos.copy(b.pos); if (Math.random() < 0.3) SFX.tick(); }
+    if (imp > 2 && b.bounces <= 6) { G.seedAcc += 3; G.seedPos.copy(b.pos); if (RNG() < 0.3) SFX.tick(); }
     return;
   }
   if (b.kind === 'naranja' && imp > 3 && b.bounces <= 14) { score(15, b.pos, '¡Boing!'); SFX.boing(1 + b.bounces * 0.06); }
@@ -1693,10 +1769,17 @@ function levelEnd() {
   if (bonus) { G.levelScore += bonus; G.total += bonus; }
   updateHud();
   const stars = thresholds().filter(t => G.levelScore >= t).length;
-  const best = G.tutorial ? { score: G.levelScore, stars } : loadBest(G.level);
-  if (G.tutorial) {} else if (G.levelScore > best.score) saveBest(G.level, { score: G.levelScore, stars: Math.max(stars, best.stars) });
-  else if (stars > best.stars) saveBest(G.level, { score: best.score, stars });
-  $('#endKicker').textContent = (G.level === 1 ? 'Nivel 1 · ' : 'Nivel 2 · ') + G.theme.name + (G.golden ? ' · oro ×5' : '');
+  let bestScore = G.levelScore, nextNode = null;
+  if (G.node) {
+    const n = G.node.n;
+    nextNode = MAP[n] || null;
+    const wasOpen = nextNode && isUnlocked(nextNode);
+    PROG.stars[n] = Math.max(starsOf(n), stars);
+    PROG.best[n] = bestScore = Math.max(PROG.best[n] || 0, G.levelScore);
+    saveProg();
+    if (nextNode && !wasOpen && isUnlocked(nextNode)) G.justUnlocked = nextNode.n;
+  } else nextNode = MAP[0];
+  $('#endKicker').textContent = (G.node ? 'Nivel ' + G.node.n + ' · ' : '') + G.theme.name + (G.golden ? ' · oro ×5' : '');
   $('#endTitle').textContent = G.mode === 'islands'
     ? (cleared ? '¡Lo has arrasado todo!' : ['Se puede romper más', '¡Buen destrozo!', '¡Menudo destrozo!', '¡Caos absoluto!'][stars])
     : ['Sigue patinando', '¡Buen recorrido!', '¡Gran patinada!', '¡Rey del túnel!'][stars];
@@ -1704,24 +1787,33 @@ function levelEnd() {
   $('#endBonus').textContent = '+' + bonus;
   $('#endLevel').textContent = G.levelScore.toLocaleString('es-ES');
   $('#endTotal').textContent = G.total.toLocaleString('es-ES');
-  $('#endBest').textContent = Math.max(best.score, G.levelScore).toLocaleString('es-ES');
-  $('#next').textContent = G.tutorial ? 'Jugar nivel 1' : G.level === 1 ? 'Siguiente escenario' : 'Otro túnel';
+  $('#endBest').textContent = bestScore.toLocaleString('es-ES');
+  const canNext = nextNode && isUnlocked(nextNode);
+  $('#next').hidden = !canNext;
+  $('#next').textContent = G.tutorial ? 'Jugar nivel 1' : 'Siguiente nivel';
+  $('#retry').hidden = !!G.tutorial;
   if (G.tutorial) $('#endKicker').textContent = 'Tutorial superado';
+  else if (!canNext && nextNode) $('#endTitle').textContent = stars ? 'Puerta cerrada: necesitas ' + nextNode.gate + ' estrellas' : 'Necesitas 1 estrella para seguir';
   [...$('#endStars').children].forEach((s, i) => s.classList.toggle('on', i < stars));
   $('#end').hidden = false;
   SFX.ding();
 }
 
 /* ---------- starting a level ---------- */
-function startLevel(level, tutorial = false) {
+function startNode(node) { G.node = node; G.scen = node.diff; startLevel(node.type === 'islands' ? 1 : 2, false, node.seed); }
+function startLevel(level, tutorial = false, seed = 0) {
   G.level = level;
+  if (tutorial) G.node = null;
   G.mode = level === 1 ? 'islands' : 'tunnel';
   G.golden = false; G.tutorial = tutorial; G.tutorialShot = false;
   G.baseSum = 0; G.totalTargets = 0; G.levelScore = 0; G.combo = 0; G.starsShown = 0;
   G.state = 'idle';
+  if (seed) RNG = mulberry32(seed);
   if (tutorial) genTutorial(); else if (level === 1) genIslands(); else genTunnel();
   const t = tutorial ? ['platano', 'sandia', 'naranja'] : shuffle(KINDS.slice());
   if (!tutorial && G.scen >= 3) t.push(pick(KINDS));
+  RNG = Math.random;
+  if (G.node) $('#lvlNum').textContent = 'Nivel ' + G.node.n + (G.node.type === 'tunnel' ? ' · Túnel' : ' · Islas');
   G.tray = t; G.used = t.map(() => false); G.sel = 0;
   G.yaw = 0; G.pull = 0; G.drag = null;
   G.camMode = 'pov';
@@ -1760,7 +1852,7 @@ function openSlot() {
 }
 // Exactly a 2% chance that all reels match: a win is decided first, and losing rolls are never allowed to match by accident.
 function rollSlot() {
-  if (Math.random() < JACKPOT_CHANCE) { const i = pick(SLOT_ICONS); return { win: true, icons: [i, i, i] }; }
+  if (RNG() < JACKPOT_CHANCE) { const i = pick(SLOT_ICONS); return { win: true, icons: [i, i, i] }; }
   const icons = [pick(SLOT_ICONS), pick(SLOT_ICONS), pick(SLOT_ICONS)];
   if (icons[0] === icons[1] && icons[1] === icons[2]) icons[2] = pick(SLOT_ICONS.filter(i => i !== icons[0]));
   return { win: false, icons };
@@ -1807,9 +1899,8 @@ $('#slotGo').addEventListener('click', () => { $('#slot').hidden = true; beginPl
 
 /* ---------- menus ---------- */
 $('#play').addEventListener('click', () => { audioOn(); goToMenu(); });
-$('#lv1').addEventListener('click', () => { G.scen = 1; startLevel(1); SFX.tick(); });
-$('#lv2').addEventListener('click', () => { G.scen = 1; startLevel(2); SFX.tick(); });
-$('#next').addEventListener('click', () => { G.scen++; startLevel(G.level); });
+$('#next').addEventListener('click', () => { const nx = G.node ? MAP[G.node.n] : MAP[0]; if (nx) startNode(nx); });
+$('#retry').addEventListener('click', () => { if (G.node) startNode(G.node); });
 $('#toMenu').addEventListener('click', () => {
   $('#end').hidden = true;
   if (G.loaded) { holder.remove(G.loaded.mesh); G.loaded = null; }
