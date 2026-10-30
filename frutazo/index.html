@@ -65,6 +65,7 @@ body {
 .info.off { opacity: 0; }
 .info b { font-family: var(--display); font-weight: 400; font-size: 22px; display: block; line-height: 1.1; }
 .info span { font-weight: 700; font-size: 14px; line-height: 1.25; display: block; }
+.info small { display: block; margin-top: 2px; font-weight: 800; font-size: 12px; letter-spacing: .03em; color: var(--peel); white-space: pre; }
 .tray { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 .tray button { pointer-events: auto; width: 48px; height: 48px; border-radius: 16px; border: 3px solid var(--ink); background: var(--cream); box-shadow: 0 4px 0 var(--ink); font-size: 26px; line-height: 1; cursor: pointer; display: grid; place-items: center; transition: transform .15s; }
 .tray.gold button { background: linear-gradient(180deg, #fff2a8, var(--gold)); }
@@ -76,6 +77,7 @@ body {
 .icon-btn { position: absolute; z-index: 5; pointer-events: auto; top: calc(104px + env(safe-area-inset-top, 0px)); right: max(14px, env(safe-area-inset-right, 0px)); width: 38px; height: 38px; border-radius: 12px; border: 3px solid var(--ink); background: var(--cream); color: var(--ink); box-shadow: 0 3px 0 var(--ink); cursor: pointer; display: grid; place-items: center; }
 .icon-btn svg { width: 20px; height: 20px; }
 .icon-btn.corner { top: calc(14px + env(safe-area-inset-top, 0px)); }
+#stage.lab .icon-btn:not(.corner) { top: calc(176px + env(safe-area-inset-top, 0px)); }
 .icon-btn.music { right: calc(max(14px, env(safe-area-inset-right, 0px)) + 46px); }
 .icon-btn.off { background: #d9cdee; }
 
@@ -115,9 +117,10 @@ body {
 /* level map */
 #menu { display: block; padding: 0; overflow-y: auto; overscroll-behavior: contain; scroll-behavior: smooth; }
 .mapbar { position: sticky; top: 0; z-index: 3; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
-  padding: calc(12px + env(safe-area-inset-top, 0px)) calc(112px + env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px));
+  padding: calc(12px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px));
   background: linear-gradient(180deg, rgba(42,22,80,.55), rgba(42,22,80,0)); }
 .mapbar b { font-family: var(--display); font-weight: 400; font-size: 32px; line-height: 1; }
+.mapbar .startot { margin-right: 96px; }
 .startot { display: flex; align-items: center; gap: 6px; font-family: var(--display); font-size: 20px; font-variant-numeric: tabular-nums; background: var(--ink); border-radius: 99px; padding: 4px 14px 4px 8px; text-shadow: none; }
 .startot i, .nstars i, .gate i { display: inline-block; background: var(--peel); clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
 .startot i { width: 22px; height: 22px; }
@@ -175,6 +178,13 @@ body {
 .dailybtn small { display: block; font-weight: 800; font-size: 12.5px; line-height: 1.2; color: var(--ink-2); }
 .dailybtn em { font-style: normal; font-family: var(--display); font-size: 15px; background: var(--ink); color: var(--peel); border-radius: 99px; padding: 3px 10px; white-space: nowrap; }
 .dailycard { max-width: 380px; gap: 12px; }
+.labbtn { pointer-events: auto; flex-basis: 100%; display: flex; align-items: center; gap: 8px; background: var(--cream); color: var(--ink); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink); padding: 5px 12px; cursor: pointer; font-family: var(--display); font-size: 16px; text-shadow: none; }
+.labbtn svg { width: 22px; height: 22px; flex: none; }
+.labbtn small { font-family: var(--body); font-weight: 800; font-size: 12px; color: var(--ink-2); margin-left: auto; }
+.labbtn:focus-visible, .labbar button:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
+.labbar { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+.labbar button { pointer-events: auto; font-family: var(--display); font-size: 14px; color: var(--ink); background: var(--cream); border: 3px solid var(--ink); border-radius: 99px; box-shadow: 0 3px 0 var(--ink); padding: 3px 12px; cursor: pointer; }
+.labbar button:last-child { background: var(--candy); color: var(--cream); }
 .dstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .dstats div { background: #f1e8ff; border: 3px solid var(--ink); border-radius: 14px; padding: 6px 8px; display: flex; flex-direction: column; align-items: center; min-width: 0; }
 .dstats span { font-weight: 800; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); text-align: center; }
@@ -241,6 +251,11 @@ body {
       </div>
       <div class="goldtag" id="goldTag" hidden>Frutas de oro · ×5</div>
       <div class="leftpill" id="leftPill" hidden></div>
+      <div class="labbar" id="labBar" hidden>
+        <button type="button" id="labReset">Reponer</button>
+        <button type="button" id="labSwitch">Probar en el túnel</button>
+        <button type="button" id="labExit">Salir</button>
+      </div>
     </div>
     <div class="mid">
       <div id="combo" class="outline"></div>
@@ -251,7 +266,7 @@ body {
       <div id="skipHint" class="outline" hidden>Toca para empezar ya</div>
     </div>
     <div class="bottom">
-      <div class="info outline" id="info"><b id="fruitName"></b><span id="fruitHint"></span></div>
+      <div class="info outline" id="info"><b id="fruitName"></b><span id="fruitHint"></span><small id="fruitStats"></small></div>
       <div class="tray" id="tray"></div>
     </div>
   </div>
@@ -270,7 +285,8 @@ body {
 
   <div class="overlay clear" id="menu" hidden>
     <div class="mapbar outline"><b>Mapa</b><span class="startot" aria-label="Estrellas conseguidas"><i></i><span id="starTotal">0 / 0</span></span><div class="collection" id="collection" aria-label="Tus frutas"></div>
-      <button type="button" class="dailybtn" id="dailyBtn"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M12 6h16v8a8 8 0 0 1-16 0z" fill="#ffc93c" stroke="#2a1650" stroke-width="3" stroke-linejoin="round"/><path d="M12 9H6a6 6 0 0 0 6 7M28 9h6a6 6 0 0 1-6 7" fill="none" stroke="#2a1650" stroke-width="3"/><path d="M17 22h6v6h-6zM12 34h16v-6H12z" fill="#ff3d7f" stroke="#2a1650" stroke-width="3" stroke-linejoin="round"/></svg><span><b>Reto del día</b><small id="dailySub">El mismo nivel para todo el mundo</small></span><em id="dailyTag">Jugar</em></button></div>
+      <button type="button" class="dailybtn" id="dailyBtn"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M12 6h16v8a8 8 0 0 1-16 0z" fill="#ffc93c" stroke="#2a1650" stroke-width="3" stroke-linejoin="round"/><path d="M12 9H6a6 6 0 0 0 6 7M28 9h6a6 6 0 0 1-6 7" fill="none" stroke="#2a1650" stroke-width="3"/><path d="M17 22h6v6h-6zM12 34h16v-6H12z" fill="#ff3d7f" stroke="#2a1650" stroke-width="3" stroke-linejoin="round"/></svg><span><b>Reto del día</b><small id="dailySub">El mismo nivel para todo el mundo</small></span><em id="dailyTag">Jugar</em></button>
+      <button type="button" class="labbtn" id="labBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><path d="M7.5 15h9l1.6 3.2a1 1 0 0 1-.9 1.3H6.8a1 1 0 0 1-.9-1.3z" fill="#a8f03a"/></svg>Campo de pruebas<small>todas las frutas, sin límite</small></button></div>
     <div class="map" id="map"></div>
     <div class="maptoast" id="mapToast" hidden></div>
   </div>
@@ -449,6 +465,16 @@ const pinaMat = cachedTexMat('pina', () => new THREE.MeshStandardMaterial({ roug
   for (let i = -8; i < 16; i++) { g.beginPath(); g.moveTo(i * 16, 0); g.lineTo(i * 16 + h, h); g.stroke(); g.beginPath(); g.moveTo(i * 16, h); g.lineTo(i * 16 + h, 0); g.stroke(); }
   g.fillStyle = '#ffd25a'; for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) { g.beginPath(); g.arc(i * 16 + 8, j * 16 + 8, 2.5, 0, 6.3); g.fill(); }
 }) }));
+const orangeMat = cachedTexMat('orange', () => new THREE.MeshStandardMaterial({ roughness: 0.65, map: canvasTex(128, 64, (g, w, h) => {
+  g.fillStyle = '#ff8a12'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 260; i++) { g.fillStyle = Math.random() < 0.5 ? 'rgba(255,190,90,.55)' : 'rgba(210,90,0,.35)'; g.beginPath(); g.arc(Math.random() * w, Math.random() * h, 1.2, 0, 6.3); g.fill(); }
+  g.fillStyle = 'rgba(255,255,255,.25)'; g.fillRect(0, h * 0.18, w, h * 0.12);
+}) }));
+const cocoMat = cachedTexMat('coco', () => new THREE.MeshStandardMaterial({ roughness: 1, map: canvasTex(128, 64, (g, w, h) => {
+  g.fillStyle = '#6b4423'; g.fillRect(0, 0, w, h);
+  g.lineWidth = 1.4;
+  for (let i = 0; i < 340; i++) { const x = Math.random() * w, y = Math.random() * h; g.strokeStyle = Math.random() < 0.5 ? 'rgba(160,110,60,.7)' : 'rgba(40,22,10,.6)'; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.random() * 6 - 3, y + 4 + Math.random() * 5); g.stroke(); }
+}) }));
 const ballMat = cachedTexMat('ball', () => new THREE.MeshStandardMaterial({ roughness: 0.35, map: canvasTex(256, 32, (g, w, h) => {
   ['#ff3d7f', '#fff8ec', '#3fb6ff', '#fff8ec', '#ffd23f', '#fff8ec'].forEach((c, i) => { g.fillStyle = c; g.fillRect(i * w / 6, 0, w / 6 + 1, h); });
 }) }));
@@ -494,32 +520,32 @@ const THEMES = [
 
 /* ---------- fruits ---------- */
 const FRUITS = {
-  platano: { name: 'Plátano', icon: '🍌', color: 0xffd629, r: 0.28, mass: 1, rest: 0.35, impactFric: 0.12, rollFric: 1.3,
+  platano: { pitch: 1.1, name: 'Plátano', icon: '🍌', color: 0xffd629, r: 0.28, mass: 1, rest: 0.35, impactFric: 0.12, rollFric: 1.3,
     verb: '¡Pela!', hint: 'Toca en el aire: sale disparado de la cáscara y sigue resbalando.',
     tverb: '¡Turbo!', thint: 'Muy ágil en las paredes. Toca para un turbo resbaladizo.', steer: 8, damp: 1.1, drag: 0.7, hop: 0.2 },
-  sandia: { name: 'Sandía', icon: '🍉', color: 0xff3355, r: 0.42, mass: 2.2, rest: 0.25, impactFric: 0.2, rollFric: 1.6,
+  sandia: { pitch: 0.7, name: 'Sandía', icon: '🍉', color: 0xff3355, r: 0.42, mass: 2.2, rest: 0.25, impactFric: 0.2, rollFric: 1.6,
     verb: '¡Revienta!', hint: 'Toca (o choca fuerte) y explota en pipas que rebotan y suman.',
     tverb: '¡Pipas!', thint: 'Lenta de girar. Toca y sus pipas recogen todas las monedas cercanas.', steer: 4.2, damp: 2.2, drag: 1.2, hop: 0 },
-  naranja: { name: 'Naranja', icon: '🍊', color: 0xff8a12, r: 0.26, mass: 0.8, rest: 0.88, impactFric: 0.04, rollFric: 0.7,
+  naranja: { pitch: 1.25, name: 'Naranja', icon: '🍊', color: 0xff8a12, r: 0.26, mass: 0.8, rest: 0.88, impactFric: 0.04, rollFric: 0.7,
     verb: '¡Supersalto!', hint: 'Rebota muchísimo. Toca para pegar un supersalto.',
     tverb: '¡Salta!', thint: 'Columpia mucho. Toca para saltar por encima de un obstáculo.', steer: 6.5, damp: 0.8, drag: 1, hop: 0.55 },
-  coco: { name: 'Coco', icon: '🥥', color: 0xf3eadb, r: 0.3, mass: 3.2, rest: 0.2, impactFric: 0.25, rollFric: 2.2,
+  coco: { pitch: 0.6, name: 'Coco', icon: '🥥', color: 0xf3eadb, r: 0.3, mass: 3.2, rest: 0.2, impactFric: 0.25, rollFric: 2.2,
     verb: '¡Plomazo!', hint: 'Pesa una barbaridad. Toca para caer en picado con onda expansiva.',
     tverb: '¡Apisonadora!', thint: 'Pesado y rápido. Toca y durante 3 s rompe los obstáculos.', steer: 3.6, damp: 2.5, drag: 0.55, hop: 0 },
-  uvas: { name: 'Uvas', icon: '🍇', color: 0x7b3fa0, r: 0.3, mass: 1.3, rest: 0.45, impactFric: 0.15, rollFric: 1.5,
+  uvas: { pitch: 1.35, name: 'Uvas', icon: '🍇', color: 0x7b3fa0, r: 0.3, mass: 1.3, rest: 0.45, impactFric: 0.15, rollFric: 1.5,
     verb: '¡Divide!', hint: 'Toca y el racimo se separa en seis uvas.',
     tverb: '¡Divide!', thint: 'Toca y el racimo se separa en tres uvas por carriles distintos.', steer: 6.5, damp: 1.5, drag: 1, hop: 0.3 },
   // unlocked on the map
-  fresa: { name: 'Fresa', icon: '🍓', color: 0xff2a4d, r: 0.22, mass: 0.7, rest: 0.5, impactFric: 0.12, rollFric: 1.4, unlock: 5, tag: 'Pegajosa',
+  fresa: { pitch: 1.45, name: 'Fresa', icon: '🍓', color: 0xff2a4d, r: 0.22, mass: 0.7, rest: 0.5, impactFric: 0.12, rollFric: 1.4, unlock: 5, tag: 'Pegajosa',
     verb: '¡Mermelada!', hint: 'Toca: se pega a lo próximo que toque y revienta en mermelada.',
     tverb: '¡Pegajosa!', thint: 'Toca y se agarra a la pared: 3 s de control total.', steer: 7, damp: 1.3, drag: 0.9, hop: 0.35 },
-  pina: { name: 'Piña', icon: '🍍', color: 0xf2b21a, r: 0.32, mass: 2, rest: 0.3, impactFric: 0.3, rollFric: 2, unlock: 7, tag: 'Pinchuda',
+  pina: { pitch: 0.9, name: 'Piña', icon: '🍍', color: 0xf2b21a, r: 0.32, mass: 2, rest: 0.3, impactFric: 0.3, rollFric: 2, unlock: 7, tag: 'Pinchuda',
     verb: '¡Pinchos!', hint: 'Toca: saca los pinchos y atraviesa todo lo que pilla sin frenar.',
     tverb: '¡Torbellino!', thint: 'Toca: da vueltas por todo el tubo cogiendo monedas y sin chocar.', steer: 4.5, damp: 2, drag: 0.8, hop: 0.1 },
-  zanahoria: { name: 'Zanahoria', icon: '🥕', color: 0xff7a1a, r: 0.2, mass: 0.9, rest: 0.3, impactFric: 0.15, rollFric: 1.6, unlock: 13, tag: 'Misil', veg: true,
+  zanahoria: { pitch: 1.0, name: 'Zanahoria', icon: '🥕', color: 0xff7a1a, r: 0.2, mass: 0.9, rest: 0.3, impactFric: 0.15, rollFric: 1.6, unlock: 13, tag: 'Misil', veg: true,
     verb: '¡Cohete!', hint: 'Toca: sale recta como un misil y explota al chocar.',
     tverb: '¡Cohete!', thint: 'Toca: vuela por el centro del túnel por encima de los obstáculos.', steer: 6, damp: 1.4, drag: 0.6, hop: 0.2 },
-  berenjena: { name: 'Berenjena', icon: '🍆', color: 0x6a2c91, r: 0.3, mass: 1.6, rest: 0.75, impactFric: 0.08, rollFric: 1, unlock: 19, tag: 'Gelatinosa', veg: true,
+  berenjena: { pitch: 0.8, name: 'Berenjena', icon: '🍆', color: 0x6a2c91, r: 0.3, mass: 1.6, rest: 0.75, impactFric: 0.08, rollFric: 1, unlock: 19, tag: 'Gelatinosa', veg: true,
     verb: '¡Gigante!', hint: 'Rebota como gelatina. Toca y se hace gigante durante 2,5 s.',
     tverb: '¡Rebote!', thint: 'Toca: durante 3 s rebota en los obstáculos en vez de reventar.', steer: 5, damp: 1.2, drag: 1, hop: 0.5 },
 };
@@ -528,9 +554,49 @@ const BASE_KINDS = KINDS.filter(k => !FRUITS[k].unlock);
 // Everything the slot machine can show, including produce planned for later levels.
 const SLOT_ICONS = ['🍌', '🍉', '🍊', '🥥', '🍇', '🍓', '🍍', '🍒', '🍋', '🍑', '🥝', '🥕', '🍆', '🥦', '🌽'];
 
+// Where each fruit wears its face: [y, z, size, tilt]
+const FACES = {
+  platano: [-0.075, 0.085, 0.55, 0], sandia: [0.04, 0.45, 1.25, 0], naranja: [0.03, 0.255, 0.8, 0], coco: [0.0, 0.305, 0.9, 0],
+  uvas: [0.04, 0.2, 0.6, 0], uva: [0.0, 0.118, 0.38, 0], fresa: [0.0, 0.19, 0.68, 0], pina: [0.0, 0.255, 0.85, 0],
+  zanahoria: [0.105, -0.06, 0.6, -1.0], berenjena: [0.06, 0.355, 0.85, 0],
+};
+const faceGeo = { eye: sg(new THREE.SphereGeometry(1, 12, 10)), smile: sg(new THREE.TorusGeometry(1, 0.28, 6, 14, Math.PI)) };
+const faceMat = { white: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 }), ink: new THREE.MeshStandardMaterial({ color: 0x1a1030, roughness: 0.4 }) };
+function addFace(g, kind) {
+  const f = FACES[kind]; if (!f) return;
+  const [y, z, s, tilt] = f;
+  const face = new THREE.Group(); face.position.set(0, y, z); face.rotation.x = tilt;
+  const eyes = [], pupils = [];
+  [-1, 1].forEach(k => {
+    const e = new THREE.Mesh(faceGeo.eye, faceMat.white); e.scale.set(0.042 * s, 0.05 * s, 0.025 * s); e.position.set(k * 0.045 * s, 0.03 * s, 0); face.add(e); eyes.push(e);
+    const p = new THREE.Mesh(faceGeo.eye, faceMat.ink); p.scale.set(0.022 * s, 0.026 * s, 0.012 * s); p.position.set(k * 0.042 * s, 0.026 * s, 0.022 * s); face.add(p); pupils.push(p);
+  });
+  const smile = new THREE.Mesh(faceGeo.smile, faceMat.ink); smile.scale.setScalar(0.028 * s); smile.rotation.z = Math.PI; smile.position.set(0, -0.022 * s, 0.006 * s); face.add(smile);
+  const oh = new THREE.Mesh(faceGeo.eye, faceMat.ink); oh.scale.set(0.02 * s, 0.026 * s, 0.01 * s); oh.position.set(0, -0.035 * s, 0.01 * s); oh.visible = false; face.add(oh);
+  g.userData.body.add(face);
+  g.userData.face = { eyes, pupils, smile, oh, mood: 'smile' };
+}
+function setFace(mesh, mood) {
+  const f = mesh && mesh.userData.face; if (!f || f.mood === mood) return;
+  f.mood = mood; f.smile.visible = mood === 'smile'; f.oh.visible = mood !== 'smile';
+  f.oh.scale.y = (mood === 'wow' ? 0.04 : 0.026) * (f.oh.scale.x / 0.02);
+}
+function blinkFace(mesh, t) {
+  const f = mesh && mesh.userData.face; if (!f) return;
+  const closed = (t % 3.3) < 0.12;
+  f.eyes.forEach(e => e.scale.y = e.scale.x * (closed ? 0.15 : 1.19));
+  f.pupils.forEach(p => p.visible = !closed);
+}
+// 1-3 dots for the fruit card: weight, bounce, grip in the tunnel
+function fruitStats(k) {
+  const F = FRUITS[k] || FRUITS.uvas;
+  const lv = (v, a, b) => v < a ? 1 : v < b ? 2 : 3, dots = n => '●'.repeat(n) + '○'.repeat(3 - n);
+  return 'Peso ' + dots(lv(F.mass, 1, 2.1)) + '  ·  Rebote ' + dots(lv(F.rest, 0.3, 0.6)) + '  ·  Control ' + dots(lv(F.steer, 4.6, 6.6));
+}
 function makeFruit(kind, golden = G.golden) {
-  const g = new THREE.Group();
-  const add = (geo, m, x = 0, y = 0, z = 0, s = 1) => { const o = new THREE.Mesh(geo, golden ? goldMat : m); o.position.set(x, y, z); if (typeof s === 'number') o.scale.setScalar(s); else o.scale.set(...s); o.castShadow = true; g.add(o); return o; };
+  const g = new THREE.Group(), body = new THREE.Group();
+  g.add(body); g.userData.body = body;
+  const add = (geo, m, x = 0, y = 0, z = 0, s = 1) => { const o = new THREE.Mesh(geo, golden ? goldMat : m); o.position.set(x, y, z); if (typeof s === 'number') o.scale.setScalar(s); else o.scale.set(...s); o.castShadow = true; body.add(o); return o; };
   if (kind === 'platano') {
     const curve = new THREE.QuadraticBezierCurve3(V(-0.33, 0.07, 0), V(0, -0.16, 0), V(0.33, 0.07, 0));
     g.userData.inner = add(new THREE.TubeGeometry(curve, 20, 0.07, 8, false), mat(0xf6efc6));
@@ -540,11 +606,11 @@ function makeFruit(kind, golden = G.golden) {
   } else if (kind === 'sandia') {
     add(GEO.sphere, melonMat, 0, 0, 0, [0.42, 0.4, 0.46]);
   } else if (kind === 'naranja') {
-    add(GEO.sphere, mat(0xff8a12, { roughness: 0.75 }), 0, 0, 0, 0.26);
+    add(GEO.sphere, orangeMat, 0, 0, 0, 0.26);
     add(GEO.chunk, mat(0x3fa83a), 0.05, 0.27, 0, [0.12, 0.025, 0.06]);
     add(GEO.chunk, mat(0x5a3b1c), 0, 0.26, 0, [0.025, 0.06, 0.025]);
   } else if (kind === 'coco') {
-    add(GEO.sphere, mat(0x6b4423, { roughness: 1 }), 0, 0, 0, [0.3, 0.29, 0.31]);
+    add(GEO.sphere, cocoMat, 0, 0, 0, [0.3, 0.29, 0.31]);
     [[0.06, 0.25, 0.12], [-0.07, 0.25, 0.12], [0, 0.27, 0.02]].forEach(p => add(GEO.lowSphere, mat(0x2b1a0e), p[0], p[1], p[2] + 0.04, 0.04));
   } else if (kind === 'uvas') {
     const layers = [[0.12, 4, 0.11], [0, 3, 0.09], [-0.12, 2, 0.06], [-0.23, 1, 0]];
@@ -572,6 +638,7 @@ function makeFruit(kind, golden = G.golden) {
   } else if (kind === 'uva') {
     add(GEO.sphere, mat(0x7b3fa0, { roughness: 0.3 }), 0, 0, 0, 0.12);
   }
+  addFace(g, kind);
   return g;
 }
 
@@ -826,7 +893,7 @@ $('#map').addEventListener('click', e => {
   else mapToast('Necesitas ' + node.gate + ' estrellas para pasar esta puerta. Tienes ' + totalStars() + '.');
 });
 function showMenu() {
-  G.mode = 'menu'; G.state = 'idle'; G.daily = null;
+  G.mode = 'menu'; G.state = 'idle'; G.daily = null; G.sandbox = null;
   renderBoard();
   $('#hud').hidden = true;
   $('#mute').classList.add('corner'); $('#music').classList.add('corner');
@@ -1301,6 +1368,7 @@ function riderVisual(r, dt) {
   const p = rPos(r);
   if (r.enter > 0) { r.enter = Math.max(0, r.enter - dt * 3.5); p.lerp(r.from, smooth(r.enter)); }
   r.mesh.position.copy(p);
+  setFace(r.mesh, 'wow');
   if (r.grow > 0) { r.grow = Math.max(0, r.grow - dt * 4); r.mesh.scale.setScalar(1 - r.grow * (1 - r.growFrom)); }
   wallDir(FR, r.th, RN).negate();
   RA.crossVectors(RN, FR.T).normalize();
@@ -1428,7 +1496,14 @@ function updateSling(dt) {
   else { G.pullVel += (-420 * G.pullVis - 14 * G.pullVel) * dt; G.pullVis = clamp(G.pullVis + G.pullVel * dt, -0.35, 1); }
   if (!G.drag) G.pouchX *= Math.max(0, 1 - dt * 12);
   holder.position.set(POUCH_REST.x + G.pouchX, POUCH_REST.y - G.pullVis * 0.16, POUCH_REST.z + G.pullVis * 0.55);
-  if (G.loaded) G.loaded.mesh.rotation.y += dt * 0.6;
+  if (G.loaded) {
+    const m = G.loaded.mesh;
+    m.rotation.y = Math.sin(T * 0.8) * 0.35;
+    blinkFace(m, T);
+    setFace(m, G.drag && G.pull > 0.35 ? 'wow' : 'smile');
+    const by = Math.abs(Math.sin(T * 3)) * 0.012 * (1 - G.pullVis);
+    m.position.y = by;
+  }
   bands.forEach((b, i) => {
     tmpA.copy(holder.position).sub(tips[i]);
     const len = tmpA.length();
@@ -1595,7 +1670,11 @@ function onImpact(b, imp) {
   if (b.rocket > 0 && imp > 0.3) { rocketBoom(b); return; }
   if (b.sticky && imp > 0.3) { stick(b); return; }
   if (imp < 1.5) return;
-  if (b.kind === 'berenjena' && imp > 3) { b.squash = 1; SFX.boing(0.8); }
+  if (imp > 3) {
+    b.squash = Math.min(1, imp / 10) * (b.kind === 'berenjena' ? 1.8 : 1);
+    if (b.kind === 'berenjena') SFX.boing(0.8);
+    if (!b.isSeed && imp > 5) burst(b.pos, FRUITS[b.kind] ? FRUITS[b.kind].color : 0x7b3fa0, 5, 3, 0.05);
+  }
   b.bounces++;
   if (b.isSeed) {
     if (imp > 2 && b.bounces <= 6) { G.seedAcc += 3; G.seedPos.copy(b.pos); if (RNG() < 0.3) SFX.tick(); }
@@ -1658,7 +1737,21 @@ const ROT = V();
 function projVisual(b, dt) {
   if (b.grow > 0) { b.grow = Math.max(0, b.grow - dt * 4); b.mesh.scale.setScalar(1 - b.grow * (1 - b.growFrom)); }
   if (b.gs !== undefined) { b.gs += ((b.giant > 0 ? 1.9 : 1) - b.gs) * Math.min(1, dt * 8); b.mesh.scale.setScalar(b.gs); }
-  if (b.squash > 0) { b.squash = Math.max(0, b.squash - dt * 4); const k = Math.sin(b.squash * 18) * b.squash * 0.25; b.mesh.scale.set((b.gs || 1) * (1 + k), (b.gs || 1) * (1 - k), (b.gs || 1) * (1 + k)); }
+  const body = b.mesh.userData.body;
+  if (body) {
+    b.squash = Math.max(0, (b.squash || 0) - dt * 3.5);
+    const k = Math.sin(b.squash * 16) * b.squash * 0.3;
+    body.scale.set(1 + k, 1 - k, 1 + k);
+  }
+  if (b.main && !b.stuck) {
+    setFace(b.mesh, 'wow');
+    b.trailT = (b.trailT || 0) - dt;
+    if (b.trailT <= 0 && b.vel.lengthSq() > 25) {
+      b.trailT = 0.05;
+      const m = new THREE.Mesh(GEO.lowSphere, mat(FRUITS[b.kind] ? FRUITS[b.kind].color : 0xffffff, { roughness: 0.3 })); m.scale.setScalar(rand(0.03, 0.06));
+      addDebris(m, b.pos.clone(), b.vel.clone().multiplyScalar(-0.05).add(V(rand(-0.4, 0.4), rand(0, 0.6), rand(-0.4, 0.4))), 0.45);
+    }
+  }
   if (b.stuck) return;
   if (b.rocket > 0) {
     b.mesh.lookAt(Tv.copy(b.pos).add(b.vel));
@@ -1932,7 +2025,7 @@ function renderTray() {
     b.setAttribute('aria-label', FRUITS[k].name);
     b.disabled = G.used[i];
     b.classList.toggle('sel', i === G.sel && !G.used[i]);
-    b.addEventListener('click', e => { e.stopPropagation(); if (G.state !== 'aim' || G.used[i]) return; G.sel = i; loadFruit(); renderTray(); SFX.tick(); });
+    b.addEventListener('click', e => { e.stopPropagation(); if (G.state !== 'aim' || G.used[i]) return; G.sel = i; if (G.sandbox) G.labSel = i; loadFruit(); renderTray(); SFX.tick(); });
     trayEl.appendChild(b);
   });
 }
@@ -1948,6 +2041,7 @@ function loadFruit() {
   G.loaded = { kind, mesh, s };
   $('#fruitName').textContent = (G.golden ? F.name + ' de oro' : F.name);
   $('#fruitHint').textContent = G.mode === 'tunnel' ? F.thint : F.hint;
+  $('#fruitStats').textContent = fruitStats(kind);
 }
 const fruitsLeft = () => G.used.filter(u => !u).length;
 const targetsLeft = () => props.filter(p => p.state === 'idle').length;
@@ -1958,7 +2052,8 @@ function launch() {
   const wp = mesh.getWorldPosition(V());
   holder.remove(mesh); world.add(mesh);
   mesh.position.copy(wp);
-  G.used[G.sel] = true; G.loaded = null;
+  if (!G.sandbox) G.used[G.sel] = true;
+  G.loaded = null;
   G.state = 'flight'; G.abilityUsed = false; G.settleT = 0; G.combo = 0; G.flightT = 0; G.ghostRec = []; G.ghostT = 0;
   if (TUN) for (const o of TUN.obstacles) { o.nearBy = false; o.jumped = false; }
   $('#aimHint').hidden = true;
@@ -1978,7 +2073,7 @@ function launch() {
     G.lookAt.copy(camera.position).addScaledVector(G.lastDir, 10);
   }
   renderTray();
-  SFX.launch();
+  SFX.launch(); SFX.wee(FRUITS[kind].pitch || 1);
   G.fovKick = 7; G.shake += 0.15; buzz(20);
   G.tutorialShot = true;
   if (G.tutorial) { try { localStorage.setItem('fruitparty-onboarded', '1'); } catch (e) {} }
@@ -1990,7 +2085,8 @@ function shotOver() {
   projectiles = [];
   G.combo = 0;
   $('#flight').hidden = true;
-  const done = fruitsLeft() === 0 || (G.mode === 'islands' && targetsLeft() === 0);
+  const done = !G.sandbox && (fruitsLeft() === 0 || (G.mode === 'islands' && targetsLeft() === 0));
+  if (G.sandbox === 'islands' && targetsLeft() === 0) setTimeout(() => { if (G.sandbox === 'islands') startSandbox('islands'); }, 900);
   G.camMode = 'return'; G.ret = { t: 0, p: camera.position.clone(), q: camera.quaternion.clone() };
   if (done) { G.state = 'over'; setTimeout(levelEnd, 900); }
   else { G.state = 'aim'; loadFruit(); renderTray(); }
@@ -2083,7 +2179,7 @@ function saveDailyLocal(v) { try { localStorage.setItem('fruitparty-daily', JSON
 function startDaily() {
   const d = dailyInfo();
   const loc = loadDailyLocal(); loc.tries++; saveDailyLocal(loc);
-  G.node = null; G.daily = d; G.scen = 2;
+  G.node = null; G.daily = d; G.sandbox = null; G.scen = 2;
   $('#daily').hidden = true; $('#end').hidden = true;
   startLevel(d.type === 'tunnel' ? 2 : 1, false, d.seed);
 }
@@ -2187,29 +2283,69 @@ $('#dailyPlay').addEventListener('click', () => { clearInterval(dailyTick); star
   renderBoard();
 })();
 
-function startNode(node) { G.daily = null; G.node = node; G.scen = node.diff; startLevel(node.type === 'islands' ? 1 : 2, false, node.seed); }
+function genSandbox() {
+  clearWorld();
+  const theme = G.theme = THEMES[1];
+  setSky(theme); makeSlime(theme); bigDecor(theme);
+  addPlatform(0, 0, 1.2, 5, 6.5, theme.plats[0], theme);
+  const a = addPlatform(0, 0.3, -14, 14, 7, theme.plats[1], theme);
+  tower(-4.2, a.top, -14, { w: 2.6, d: 2.6 }, theme); pins(0, a.top, -13.8, { w: 2.6, d: 2.6 }); cake(4.2, a.top, -14.2);
+  const b = addPlatform(0, 1.2, -26, 17, 8, theme.plats[2], theme);
+  duck(-5.5, b.top, -26, 1.3); tower(0, b.top, -26, { w: 4.4, d: 2.6 }, theme); bumper(4.6, b.top, -24.4); target(6.6, b.top, -27.4);
+  const c = addPlatform(0, 2.2, -38, 8, 8, theme.plats[3], theme); sweeper(c, theme);
+  for (let i = -3; i <= 3; i++) balloon(i * 2.2, 6.5 + (i % 2) * 0.6, -20);
+  hoop(-5, 4.5, -10);
+  G.pov = { pos: CAM_POS.clone(), yaw0: 0, pitch: -0.1 };
+}
+function startSandbox(kind) {
+  G.node = null; G.daily = null; G.sandbox = kind; G.scen = 2;
+  $('#end').hidden = true; $('#menu').hidden = true; $('#daily').hidden = true;
+  const keep = G.labSel || 0;
+  startLevel(kind === 'tunnel' ? 2 : 1, false, kind === 'tunnel' ? 5151 : 4242);
+  G.sel = keep; loadFruit(); renderTray();
+}
+function goMenu() {
+  $('#end').hidden = true;
+  if (G.loaded) { holder.remove(G.loaded.mesh); G.loaded = null; }
+  camera.up.set(0, 1, 0);
+  camLight.intensity = 0;
+  genTitle(true);
+  showMenu();
+}
+$('#labBtn').addEventListener('click', () => { audioOn(); SFX.tick(); startSandbox('islands'); });
+$('#labReset').addEventListener('click', () => { if (G.state === 'aim') startSandbox(G.sandbox); });
+$('#labSwitch').addEventListener('click', () => { if (G.state === 'aim') startSandbox(G.sandbox === 'tunnel' ? 'islands' : 'tunnel'); });
+$('#labExit').addEventListener('click', () => { G.sandbox = null; goMenu(); });
+
+function startNode(node) { G.daily = null; G.sandbox = null; G.node = node; G.scen = node.diff; startLevel(node.type === 'islands' ? 1 : 2, false, node.seed); }
 function startLevel(level, tutorial = false, seed = 0) {
   G.level = level;
-  if (tutorial) { G.node = null; G.daily = null; }
+  if (tutorial) { G.node = null; G.daily = null; G.sandbox = null; }
   G.mode = level === 1 ? 'islands' : 'tunnel';
   G.golden = false; G.tutorial = tutorial; G.tutorialShot = false;
   G.baseSum = 0; G.totalTargets = 0; G.levelScore = 0; G.combo = 0; G.starsShown = 0;
   G.state = 'idle';
   if (seed) RNG = mulberry32(seed);
-  if (tutorial) genTutorial(); else if (level === 1) genIslands(); else genTunnel();
+  if (tutorial) genTutorial(); else if (G.sandbox === 'islands') genSandbox(); else if (level === 1) genIslands(); else genTunnel();
   let t;
   if (tutorial) t = ['platano', 'sandia', 'naranja'];
   else {
-    const pool = G.daily ? KINDS.slice() : unlockedKinds(), size = G.scen >= 3 ? 6 : 5;
+    const pool = G.daily || G.sandbox ? KINDS.slice() : unlockedKinds(), size = G.sandbox ? KINDS.length : G.scen >= 3 ? 6 : 5;
+    if (G.sandbox) RNG = () => 0.5;
     t = shuffle(pool.slice()).slice(0, size);
     while (t.length < size) t.push(pick(pool));
     // always bring the newest unlock so it gets played
     const newest = pool.filter(k => FRUITS[k].unlock).sort((a, b) => FRUITS[b].unlock - FRUITS[a].unlock)[0];
-    if (!G.daily && newest && !t.includes(newest)) t[0] = newest;
+    if (G.sandbox) t = KINDS.slice();
+    else if (!G.daily && newest && !t.includes(newest)) t[0] = newest;
   }
   RNG = Math.random;
   if (G.node) $('#lvlNum').textContent = 'Nivel ' + G.node.n + (G.node.type === 'tunnel' ? ' · Túnel' : ' · Islas');
   if (G.daily) $('#lvlNum').textContent = 'Reto del día · ' + G.daily.label;
+  if (G.sandbox) { $('#lvlNum').textContent = 'Campo de pruebas'; $('#lvlName').textContent = G.sandbox === 'tunnel' ? 'Túnel de prueba' : 'Islas de prueba'; }
+  $('#labBar').hidden = !G.sandbox;
+  stage.classList.toggle('lab', !!G.sandbox);
+  $('#labSwitch').textContent = G.sandbox === 'tunnel' ? 'Probar en las islas' : 'Probar en el túnel';
   G.tray = t; G.used = t.map(() => false); G.sel = 0;
   G.yaw = 0; G.pull = 0; G.drag = null;
   G.camMode = 'pov';
@@ -2222,14 +2358,14 @@ function startLevel(level, tutorial = false, seed = 0) {
   $('#flight').hidden = true;
   $('#title').hidden = true;
   renderTray(); loadFruit(); updateHud();
-  if (tutorial || G.daily) beginPlay(); else openSlot();
+  if (tutorial || G.daily || G.sandbox) beginPlay(); else openSlot();
 }
 function beginPlay() {
   G.state = 'aim';
   $('#aimHint').hidden = false;
   G.ghost = []; G.ghostRec = [];
   // quick flyover so the player sees what there is to break
-  if (G.mode === 'islands' && !G.tutorial && props.length) {
+  if (G.mode === 'islands' && !G.tutorial && !G.sandbox && props.length) {
     const c = V(); props.forEach(p => c.add(p.pos)); c.divideScalar(props.length);
     G.introC = c; G.introT = 0; G.camMode = 'intro';
     $('#skipHint').hidden = false;
@@ -2305,14 +2441,7 @@ $('#play').addEventListener('click', () => { audioOn(); goToMenu(); });
 $('#next').addEventListener('click', () => { if (G.daily) { openDaily(); return; } const nx = G.node ? MAP[G.node.n] : MAP[0]; if (nx) startNode(nx); });
 $('#revealOk').addEventListener('click', () => { $('#reveal').hidden = true; nextReveal(); });
 $('#retry').addEventListener('click', () => { if (G.daily) startDaily(); else if (G.node) startNode(G.node); });
-$('#toMenu').addEventListener('click', () => {
-  $('#end').hidden = true;
-  if (G.loaded) { holder.remove(G.loaded.mesh); G.loaded = null; }
-  camera.up.set(0, 1, 0);
-  camLight.intensity = 0;
-  genTitle(true);
-  showMenu();
-});
+$('#toMenu').addEventListener('click', goMenu);
 
 /* ---------- input ---------- */
 canvas.addEventListener('pointerdown', e => {
@@ -2410,6 +2539,7 @@ const SFX = {
   spin: () => { for (let i = 0; i < 18; i++) tone(700 + (i % 3) * 120, 700 + (i % 3) * 120, 0.03, 'square', 0.035, i * 0.09); },
   combo: n => { const sc = [523, 587, 659, 784, 880, 1047, 1175, 1319, 1568, 1760, 2093]; const f = sc[Math.min(sc.length - 1, n - 1)]; tone(f, f * 1.01, 0.16, 'triangle', 0.09); tone(f * 2, f * 2, 0.08, 'sine', 0.03, 0.02); },
   star: n => { const b = [784, 988, 1175][n - 1] || 1175; tone(b, b, 0.12, 'square', 0.06); tone(b * 1.5, b * 1.5, 0.3, 'triangle', 0.12, 0.09); },
+  wee: k => { tone(420 * k, 980 * k, 0.22, 'triangle', 0.07); tone(840 * k, 1500 * k, 0.16, 'sine', 0.025, 0.05); },
   jackpot: () => { [0, 0.12, 0.24, 0.36, 0.5].forEach((d, i) => tone([660, 830, 990, 1320, 1760][i], [660, 830, 990, 1320, 1760][i], 0.22, 'triangle', 0.15, d)); noise(0.8, 0.1, 5000, 'highpass'); },
 };
 /* ---------- music: a tiny step sequencer, one song per place ---------- */
