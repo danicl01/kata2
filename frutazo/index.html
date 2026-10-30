@@ -49,6 +49,9 @@ body {
 .meter em { font-style: normal; font-weight: 800; font-size: 15px; min-width: 52px; text-align: right; font-variant-numeric: tabular-nums; }
 .goldtag { align-self: flex-start; margin-top: 8px; font-family: var(--display); font-size: 14px; color: var(--ink); background: linear-gradient(180deg, #fff2a8, var(--gold)); border: 3px solid var(--ink); border-radius: 99px; padding: 2px 12px; box-shadow: 0 3px 0 var(--ink); }
 .mid { flex: 1; position: relative; }
+.leftpill { align-self: flex-start; margin-top: 8px; font-weight: 800; font-size: 13.5px; color: var(--cream); background: var(--shade); border: 2px solid var(--ink); border-radius: 99px; padding: 1px 12px; font-variant-numeric: tabular-nums; }
+#ff { position: absolute; top: 2%; right: 0; font-family: var(--display); font-size: 20px; color: var(--lime); }
+#skipHint { position: absolute; bottom: 6%; left: 0; right: 0; text-align: center; font-weight: 800; font-size: 14px; opacity: .9; }
 #combo { position: absolute; top: 14%; left: 0; right: 0; text-align: center; font-family: var(--display); font-size: clamp(26px, 6.5vh, 40px); color: var(--peel); transform: rotate(-4deg); opacity: 0; transition: opacity .2s; }
 #combo.show { opacity: 1; animation: thump .3s; }
 #banner { position: absolute; top: 30%; left: 0; right: 0; text-align: center; font-family: var(--display); font-size: clamp(28px, 7vh, 44px); line-height: 1.05; opacity: 0; text-wrap: balance; }
@@ -237,12 +240,15 @@ body {
         <em class="outline" id="lvlScore">0</em>
       </div>
       <div class="goldtag" id="goldTag" hidden>Frutas de oro · ×5</div>
+      <div class="leftpill" id="leftPill" hidden></div>
     </div>
     <div class="mid">
       <div id="combo" class="outline"></div>
       <div id="banner" class="outline"></div>
       <div id="aimHint" class="outline">Arrastra hacia abajo para tensar<br>y a los lados para apuntar</div>
       <div id="flight" hidden></div>
+      <div id="ff" class="outline" hidden>×2 ▸▸</div>
+      <div id="skipHint" class="outline" hidden>Toca para empezar ya</div>
     </div>
     <div class="bottom">
       <div class="info outline" id="info"><b id="fruitName"></b><span id="fruitHint"></span></div>
@@ -1247,8 +1253,12 @@ function stepRider(r, dt) {
     if (o.broken) continue;
     const win = 0.4 + r.r;
     if (r.prevS <= o.s + win && r.s >= o.s - win) {
+      let close = 9;
       for (const sec of o.sectors) {
-        if (Math.abs(angDiff(r.th, sec.c + o.phi)) < sec.hw + (r.r / TR) * 0.7 && r.h < o.h - 0.1) {
+        const gap = Math.abs(angDiff(r.th, sec.c + o.phi)) - (sec.hw + (r.r / TR) * 0.7);
+        close = Math.min(close, gap);
+        if (gap < 0 && r.h >= o.h - 0.1 && !o.jumped) { o.jumped = true; score(40, rPos(r), '¡Saltado!'); SFX.boing(1.5); }
+        if (gap < 0 && r.h < o.h - 0.1) {
           if (r.smash > 0) { breakObstacle(o, r); break; }
           if (r.spinT > 0) break;
           if (r.bouncy > 0) {
@@ -1258,6 +1268,7 @@ function stepRider(r, dt) {
           crashRider(r); return;
         }
       }
+      if (close >= 0 && close < 0.3 && !o.nearBy && r.alive) { o.nearBy = true; score(25, rPos(r), '¡Por los pelos!'); SFX.tick(); G.shake += 0.12; }
     }
   }
   // coins
@@ -1324,8 +1335,9 @@ function breakObstacle(o, r) {
 function takeCoin(c) {
   c.taken = true;
   const m = c.m, p0 = m.position.clone();
-  score(25, p0, '');
-  SFX.coin();
+  G.coinStreak = T - (G.coinLast || -9) < 1.3 ? (G.coinStreak || 0) + 1 : 1; G.coinLast = T;
+  score(25 + Math.min(50, (G.coinStreak - 1) * 5), p0, G.coinStreak >= 3 ? 'racha ×' + G.coinStreak : '');
+  SFX.coin(); if (G.coinStreak >= 3) SFX.combo(Math.min(11, G.coinStreak - 2));
   fx.push({ t: 0, dur: 0.35, upd(k) { m.position.copy(p0).lerp(camera.position, k * 0.5); m.scale.setScalar(1 - k); if (k >= 1) world.remove(m); } });
 }
 function tunnelAbility() {
@@ -1434,22 +1446,43 @@ function launchVel(out) {
   return out.set(-Math.sin(y) * Math.cos(PITCH), Math.sin(PITCH), -Math.cos(y) * Math.cos(PITCH)).multiplyScalar(sp);
 }
 const pv = V(), pp = V();
+// where the shot first lands: a ring on the floor, pink on something breakable, yellow on a bumper
+const marker = new THREE.Group();
+const markerMat = new THREE.MeshBasicMaterial({ color: 0xfff8ec, transparent: true, opacity: 0.95, side: THREE.DoubleSide, depthTest: false });
+marker.add(new THREE.Mesh(new THREE.RingGeometry(0.34, 0.5, 32), markerMat));
+marker.add(new THREE.Mesh(new THREE.CircleGeometry(0.11, 16), markerMat));
+marker.renderOrder = 5; marker.children.forEach(c => c.renderOrder = 5);
+marker.visible = false; scene.add(marker);
+const ghostDots = [];
+for (let i = 0; i < 40; i++) { const d = new THREE.Mesh(GEO.dot, new THREE.MeshBasicMaterial({ color: 0xb27bff, transparent: true, opacity: 0.5 })); d.visible = false; scene.add(d); ghostDots.push(d); }
 function updatePreview() {
-  const show = G.mode === 'islands' && G.state === 'aim' && G.drag && G.pull > 0.08;
-  if (!show) { dots.forEach(d => d.visible = false); return; }
+  const aiming = G.mode === 'islands' && G.state === 'aim' && G.camMode === 'pov';
+  const gh = aiming && G.ghost && G.ghost.length ? G.ghost : null;
+  const stepG = gh ? Math.max(1, Math.ceil(gh.length / ghostDots.length)) : 1;
+  ghostDots.forEach((d, i) => { const p = gh && gh[i * stepG]; d.visible = !!p; if (p) d.position.copy(p); });
+  const show = aiming && G.drag && G.pull > 0.08;
+  if (!show) { dots.forEach(d => d.visible = false); marker.visible = false; return; }
   holder.getWorldPosition(pp); launchVel(pv);
-  let stop = false;
-  for (let i = 0; i < dots.length; i++) {
-    for (let s = 0; s < 3 && !stop; s++) {
-      pv.y -= GRAV * 0.02; pp.addScaledVector(pv, 0.02);
-      if (pp.y < SLIME_Y) stop = true;
-      for (const pl of platforms) { const c = pl.col; if (pp.x > c.min.x && pp.x < c.max.x && pp.z > c.min.z && pp.z < c.max.z && pp.y < c.max.y && pp.y > c.min.y) stop = true; }
+  let hit = null, top = 0, di = 0;
+  for (let s = 0; s < 260 && !hit; s++) {
+    pv.y -= GRAV * 0.02; pp.addScaledVector(pv, 0.02);
+    if (pp.y < SLIME_Y) { hit = 'slime'; break; }
+    for (const pl of platforms) { const c = pl.col; if (pp.x > c.min.x && pp.x < c.max.x && pp.z > c.min.z && pp.z < c.max.z && pp.y < c.max.y && pp.y > c.min.y) { hit = 'floor'; top = c.max.y; } }
+    if (!hit) for (const p of props) if (p.state === 'idle' && probe(p.col, pp, 0.22) > 0) { hit = 'prop'; break; }
+    if (!hit) for (const bm of bumpers) if (probe(bm.col, pp, 0.22) > 0) { hit = 'bump'; break; }
+    if (s % 3 === 2 && di < dots.length) {
+      const d = dots[di]; d.visible = di > 0; d.position.copy(pp);
+      d.material.opacity = 0.95 - di / dots.length * 0.7; d.scale.setScalar(1 + di * 0.05); di++;
     }
-    const d = dots[i];
-    d.visible = !stop && i > 0;
-    d.position.copy(pp);
-    d.material.opacity = 0.95 - i / dots.length * 0.7;
-    d.scale.setScalar(1 + i * 0.05);
+  }
+  for (; di < dots.length; di++) dots[di].visible = false;
+  marker.visible = hit && hit !== 'slime';
+  if (marker.visible) {
+    markerMat.color.setHex(hit === 'prop' ? 0xff3d7f : hit === 'bump' ? 0xffd23f : 0xfff8ec);
+    marker.position.copy(pp);
+    if (hit === 'floor') { marker.position.y = top + 0.05; marker.rotation.set(-Math.PI / 2, 0, 0); }
+    else marker.quaternion.copy(camera.quaternion);
+    marker.scale.setScalar(1 + Math.sin(T * 8) * 0.08 + pp.distanceTo(camera.position) * 0.015);
   }
 }
 
@@ -1618,7 +1651,7 @@ function stepProj(b, h) {
     }
   }
   if (b.pos.y < SLIME_Y + 0.15) { killProj(b, true); return; }
-  if (b.grounded && b.vel.lengthSq() < 0.16) { b.still += h; if (b.still > 0.5) killProj(b); } else b.still = 0;
+  if (b.grounded && b.vel.lengthSq() < 0.16) { b.still += h; if (b.still > 0.35) killProj(b); } else b.still = 0;
   if (b.age > 14) killProj(b);
 }
 const ROT = V();
@@ -1863,6 +1896,10 @@ function flushSeeds(force) {
 function thresholds() { const s = G.baseSum; return [Math.round(s * 0.3), Math.round(s * 0.55), Math.round(s * 0.85)]; }
 function updateHud() {
   $('#lvlScore').textContent = G.levelScore.toLocaleString('es-ES');
+  const lp = $('#leftPill');
+  if (G.mode === 'islands' && G.totalTargets) { lp.hidden = false; const n = targetsLeft(); lp.textContent = n ? 'Quedan ' + n + ' de ' + G.totalTargets : '¡No queda nada en pie!'; }
+  else if (G.mode === 'tunnel' && TUN) { lp.hidden = false; lp.textContent = 'Monedas ' + TUN.coins.filter(c => c.taken).length + ' de ' + TUN.coins.length; }
+  else lp.hidden = true;
   const th = thresholds();
   $('#barFill').style.width = Math.min(100, G.levelScore / th[2] * 100) + '%';
   ['st1', 'st2', 'st3'].forEach((id, i) => { const el = $('#' + id); el.style.left = (th[i] / th[2] * 100) + '%'; el.classList.toggle('on', G.levelScore >= th[i]); });
@@ -1922,7 +1959,8 @@ function launch() {
   holder.remove(mesh); world.add(mesh);
   mesh.position.copy(wp);
   G.used[G.sel] = true; G.loaded = null;
-  G.state = 'flight'; G.abilityUsed = false; G.settleT = 0; G.combo = 0;
+  G.state = 'flight'; G.abilityUsed = false; G.settleT = 0; G.combo = 0; G.flightT = 0; G.ghostRec = []; G.ghostT = 0;
+  if (TUN) for (const o of TUN.obstacles) { o.nearBy = false; o.jumped = false; }
   $('#aimHint').hidden = true;
   const F = FRUITS[kind];
   $('#flight').innerHTML = G.mode === 'tunnel' ? 'Desliza para patinar · toca: <b>' + F.tverb + '</b>' : 'Toca la pantalla: <b>' + F.verb + '</b>';
@@ -1946,6 +1984,7 @@ function launch() {
   if (G.tutorial) { try { localStorage.setItem('fruitparty-onboarded', '1'); } catch (e) {} }
 }
 function shotOver() {
+  if (G.ghostRec && G.ghostRec.length > 3) G.ghost = G.ghostRec;
   flushSeeds(true);
   projectiles.forEach(b => { if (b.alive) killProj(b); });
   projectiles = [];
@@ -2188,6 +2227,13 @@ function startLevel(level, tutorial = false, seed = 0) {
 function beginPlay() {
   G.state = 'aim';
   $('#aimHint').hidden = false;
+  G.ghost = []; G.ghostRec = [];
+  // quick flyover so the player sees what there is to break
+  if (G.mode === 'islands' && !G.tutorial && props.length) {
+    const c = V(); props.forEach(p => c.add(p.pos)); c.divideScalar(props.length);
+    G.introC = c; G.introT = 0; G.camMode = 'intro';
+    $('#skipHint').hidden = false;
+  }
   const b = $('#banner');
   b.innerHTML = '<small>' + $('#lvlNum').textContent + '</small>' + G.theme.name;
   b.classList.remove('show'); void b.offsetWidth; b.classList.add('show');
@@ -2272,6 +2318,7 @@ $('#toMenu').addEventListener('click', () => {
 canvas.addEventListener('pointerdown', e => {
   audioOn();
   if (G.mode !== 'islands' && G.mode !== 'tunnel') return;
+  if (G.camMode === 'intro') { G.introT = 1; return; }
   if (G.state === 'aim' && G.loaded && G.camMode === 'pov') {
     G.drag = { x: e.clientX, y: e.clientY, yaw0: G.yaw };
     try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
@@ -2543,6 +2590,13 @@ function updateCamera(dt) {
     }
     camera.up.copy(camUp);
     camera.lookAt(G.lookAt);
+  } else if (m === 'intro') {
+    G.introT += dt / 2.8;
+    const k = Math.min(1, G.introT), e = smooth(k), c = G.introC, a = -0.9 + e * 1.6;
+    camera.up.set(0, 1, 0);
+    camera.position.set(c.x + Math.sin(a) * 19, c.y + 14 - e * 5, c.z + Math.cos(a) * 19);
+    camera.lookAt(c);
+    if (k >= 1) { $('#skipHint').hidden = true; G.camMode = 'return'; G.ret = { t: 0, p: camera.position.clone(), q: camera.quaternion.clone() }; }
   } else if (m === 'return') {
     G.ret.t += dt / 0.8;
     const k = Math.min(1, G.ret.t), e = smooth(k);
@@ -2560,11 +2614,14 @@ function frame(now) {
   requestAnimationFrame(frame);
   const rdt = Math.min(0.033, Math.max(0.001, (now - last) / 1000)); last = now; T += rdt;
   if (!world) return;
-  // game time: frozen during hit-stop, slowed during slow motion
+  // game time: frozen during hit-stop, slowed during slow motion, sped up when a shot drags on
+  const ffOn = G.mode === 'islands' && G.state === 'flight' && G.flightT > 3.5 && G.slowT <= 0;
   G.hitCd -= rdt;
   if (G.hitstop > 0) G.hitstop -= rdt;
   if (G.slowT > 0) { G.slowT -= rdt; G.timeScale += (0.3 - G.timeScale) * Math.min(1, rdt * 14); }
-  else G.timeScale += (1 - G.timeScale) * Math.min(1, rdt * 5);
+  else G.timeScale += ((ffOn ? 2.2 : 1) - G.timeScale) * Math.min(1, rdt * 5);
+  if (G.state === 'flight') G.flightT = (G.flightT || 0) + rdt;
+  if (ffEl.hidden === ffOn) ffEl.hidden = !ffOn;
   const dt = G.hitstop > 0 ? 0 : rdt * G.timeScale;
 
   for (const sw of sweepers) {
@@ -2604,11 +2661,16 @@ function frame(now) {
   if (G.mode === 'islands' && G.state === 'flight' && !projectiles.some(p => p.alive)) {
     G.settleT += dt;
     const moving = props.some(p => p.state === 'fly') || pending.length;
-    if ((!moving && G.settleT > 0.6) || G.settleT > 3.5) shotOver();
+    if ((!moving && G.settleT > 0.4) || G.settleT > 3) shotOver();
   }
 
   updateCamera(rdt);
   updateSling(rdt);
+  if (G.state === 'flight' && G.mode === 'islands') {
+    G.ghostT -= rdt;
+    const mp = projectiles.find(p => p.main && p.alive);
+    if (mp && G.ghostT <= 0 && G.ghostRec.length < 120) { G.ghostRec.push(mp.pos.clone()); G.ghostT = 0.05; }
+  }
   updatePreview();
   infoEl.classList.toggle('off', G.state !== 'aim' || !!G.drag);
   handEl.hidden = !(G.tutorial && G.state === 'aim' && !G.drag && G.camMode === 'pov' && !G.tutorialShot);
@@ -2626,7 +2688,7 @@ function frame(now) {
   renderer.render(scene, camera);
   if (sh) camera.position.sub(sh);
 }
-const handEl = $('#hand');
+const handEl = $('#hand'), ffEl = $('#ff');
 
 /* ---------- boot ---------- */
 function start(data) {
