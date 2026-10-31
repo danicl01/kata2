@@ -205,6 +205,8 @@ body {
 .labbar { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
 .labbar button { pointer-events: auto; font-family: var(--display); font-size: 14px; color: var(--ink); background: var(--cream); border: 3px solid var(--ink); border-radius: 99px; box-shadow: 0 3px 0 var(--ink); padding: 3px 12px; cursor: pointer; }
 .labbar button:last-child { background: var(--candy); color: var(--cream); }
+.labbar select { pointer-events: auto; font-family: var(--display); font-size: 14px; color: var(--ink); background: var(--peel); border: 3px solid var(--ink); border-radius: 99px; box-shadow: 0 3px 0 var(--ink); padding: 3px 10px; cursor: pointer; }
+.labbar select:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 .dstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .dstats div { background: #f1e8ff; border: 3px solid var(--ink); border-radius: 14px; padding: 6px 8px; display: flex; flex-direction: column; align-items: center; min-width: 0; }
 .dstats span { font-weight: 800; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); text-align: center; }
@@ -277,7 +279,13 @@ body {
       <div class="leftpill" id="leftPill" hidden></div>
       <div class="labbar" id="labBar" hidden>
         <button type="button" id="labReset">Reponer</button>
-        <button type="button" id="labSwitch">Ir a islas ▸</button>
+        <select id="labSwitch" aria-label="Elegir mapa de pruebas">
+          <option value="office">Oficina</option>
+          <option value="house">Casa</option>
+          <option value="picnic">Picnic gigante</option>
+          <option value="islands">Islas</option>
+          <option value="tunnel">Túnel</option>
+        </select>
         <button type="button" id="labExit">Salir</button>
       </div>
     </div>
@@ -313,7 +321,7 @@ body {
   <div class="overlay clear" id="menu" hidden>
     <div class="mapbar outline"><b>Mapa</b><span class="startot" aria-label="Estrellas conseguidas"><i></i><span id="starTotal">0 / 0</span></span><div class="collection" id="collection" aria-label="Tus frutas"></div>
       <button type="button" class="dailybtn" id="dailyBtn"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M12 6h16v8a8 8 0 0 1-16 0z" fill="#ffc93c" stroke="#2a1650" stroke-width="3" stroke-linejoin="round"/><path d="M12 9H6a6 6 0 0 0 6 7M28 9h6a6 6 0 0 1-6 7" fill="none" stroke="#2a1650" stroke-width="3"/><path d="M17 22h6v6h-6zM12 34h16v-6H12z" fill="#ff3d7f" stroke="#2a1650" stroke-width="3" stroke-linejoin="round"/></svg><span><b>Reto del día</b><small id="dailySub">El mismo nivel para todo el mundo</small></span><em id="dailyTag">Jugar</em></button>
-      <button type="button" class="labbtn" id="labBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><path d="M7.5 15h9l1.6 3.2a1 1 0 0 1-.9 1.3H6.8a1 1 0 0 1-.9-1.3z" fill="#a8f03a"/></svg>Campo de pruebas<small>oficina, islas y túnel</small></button></div>
+      <button type="button" class="labbtn" id="labBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><path d="M7.5 15h9l1.6 3.2a1 1 0 0 1-.9 1.3H6.8a1 1 0 0 1-.9-1.3z" fill="#a8f03a"/></svg>Campo de pruebas<small>oficina, casa, picnic…</small></button></div>
     <div class="map" id="map"></div>
     <div class="maptoast" id="mapToast" hidden></div>
   </div>
@@ -2201,6 +2209,13 @@ function knock(p, v) {
   else if (p.kind === 'vending') { for (let i = 0; i < 26; i++) { const m = new THREE.Mesh(GEO.chunk, mat(pick([0xff3d7f, 0x3fb6ff, 0xffd23f, 0xa8f03a, 0xff8a12, 0xb27bff]))); m.scale.set(0.18, 0.3, 0.1); addDebris(m, p.pos.clone(), V(rand(-5, 5), rand(4, 10), rand(-5, 5)), 2.6); } SFX.jackpot(); }
   else if (p.kind === 'coffee') { burst(p.pos, 0x5a3418, 16, 6, 0.1); splashFloor(p.pos, 0x5a3418, 6, 2.5, 1.2); }
   else if (p.kind === 'ficus' || p.kind === 'cactus') { burst(p.pos, 0x6b4423, 10, 5, 0.12); burst(p.pos, 0x3f9a4a, 10, 5, 0.12); splashFloor(p.pos, 0x5a3a20, 3, 1.5, 1); }
+  if (p.liquid) { splashFloor(p.pos, p.liquid, 7, Math.max(1.5, p.r * 1.6), Math.max(0.9, p.r * 0.7)); if (p.pos.distanceTo(camera.position) < 10) lensSplat(p.liquid, 4); }
+  if (p.kind === 'books') for (let i = 0; i < 16; i++) { const m = new THREE.Mesh(GEO.chunk, mat(pick([0xff3d7f, 0x3fb6ff, 0xffd23f, 0xa8f03a, 0x6b4fd8]))); m.scale.set(0.35, 0.9, 0.7); addDebris(m, p.pos.clone(), V(rand(-4, 4), rand(3, 8), rand(-4, 4)), 2.4); }
+  if (p.kind === 'tv') { burst(p.pos, 0x5ad0ff, 10, 6, 0.12); burst(p.pos, 0xffd23f, 8, 7, 0.08); J.flash(0.2); }
+  if (p.kind === 'plate' || p.kind === 'glass') { for (let i = 0; i < 8; i++) { const m = new THREE.Mesh(GEO.chunk, mat(p.kind === 'glass' ? 0xbfe8ff : 0xfdfdf8)); m.scale.set(0.2, 0.04, 0.16); addDebris(m, p.pos.clone(), V(rand(-3, 3), rand(2, 5), rand(-3, 3)), 1.6); } SFX.pin(); }
+  if (p.kind === 'fridge' || p.kind === 'bowl') for (let i = 0; i < (p.kind === 'fridge' ? 18 : 6); i++) { const m = new THREE.Mesh(GEO.sphere, mat(pick([0xff3355, 0xffd23f, 0xff8a12, 0x7b3fa0, 0x6fc13a, 0xfdfdf8]))); m.scale.setScalar(rand(0.15, 0.3)); addDebris(m, p.pos.clone(), V(rand(-4, 4), rand(3, 7), rand(-4, 4)), 2.4); }
+  if (p.kind === 'cookie') burst(p.pos, 0xc8873f, 16, 6, 0.18);
+  if (p.kind === 'donut' || p.kind === 'bigcake') for (let i = 0; i < 20; i++) { const m = new THREE.Mesh(GEO.chunk, mat(pick([0xffffff, 0x3fb6ff, 0xffd23f, 0xa8f03a, 0xff3d7f]))); m.scale.set(0.12, 0.4, 0.12); addDebris(m, p.pos.clone(), V(rand(-5, 5), rand(4, 9), rand(-5, 5)), 2.2); }
   if (p.kind === 'cooler') splashFloor(p.pos, 0x7fd3ff, 8, 3.5, 1.6);
   if (p.kind === 'mug') splashFloor(p.pos, 0x4a2a14, 2, 1, 0.6);
   if (p.kind === 'mug') burst(p.pos, 0x5a3418, 8, 4, 0.06);
@@ -2493,7 +2508,7 @@ function shotOver() {
   $('#flight').hidden = true;
   const done = !G.sandbox && (fruitsLeft() === 0 || (G.mode === 'islands' && targetsLeft() === 0));
   const lab = G.sandbox;
-  if ((lab === 'islands' || lab === 'office') && targetsLeft() === 0) setTimeout(() => { if (G.sandbox === lab) startSandbox(lab); }, 900);
+  if (lab && lab !== 'tunnel' && targetsLeft() === 0) setTimeout(() => { if (G.sandbox === lab) startSandbox(lab); }, 900);
   G.camMode = 'return'; G.ret = { t: 0, p: camera.position.clone(), q: camera.quaternion.clone() };
   if (done) { G.state = 'over'; setTimeout(levelEnd, 900); }
   else { G.state = 'aim'; loadFruit(); renderTray(); }
@@ -2932,10 +2947,10 @@ const logoMat = () => cachedTexMat('logo', () => new THREE.MeshBasicMaterial({ t
   g.textAlign = 'center'; g.fillStyle = '#ff3d7f'; g.font = '150px "Titan One", "Arial Black", sans-serif'; g.fillText('FRUIT CORP', w / 2, 170);
   g.fillStyle = '#4b2d86'; g.font = 'bold 54px "Baloo 2", "Trebuchet MS", sans-serif'; g.fillText('Exprimimos tu potencial', w / 2, 248);
 }) }));
-function buildRoom() {
-  const { x: X, zFront: ZF, zBack: ZB, h: Hh } = ROOM;
-  const wallM = mat(0xeef1f5, { roughness: 0.9 }), ceilM = mat(0xf7f8fa, { roughness: 1 }), baseM = mat(0x5a6b7d);
-  addPlatform(0, 0, (ZF + ZB) / 2, 2 * X, ZF - ZB, 0xc9d3de, OFFICE, carpetMat(2 * X, ZF - ZB));
+function buildRoom(RM = ROOM, o = {}) {
+  const { x: X, zFront: ZF, zBack: ZB, h: Hh } = RM;
+  const wallM = mat(o.wall || 0xeef1f5, { roughness: 0.9 }), ceilM = mat(0xf7f8fa, { roughness: 1 }), baseM = mat(o.base || 0x5a6b7d);
+  addPlatform(0, 0, (ZF + ZB) / 2, 2 * X, ZF - ZB, 0xc9d3de, G.theme, o.floor ? o.floor(2 * X, ZF - ZB) : carpetMat(2 * X, ZF - ZB));
   solid(-X - 1, 0, ZB, -X, Hh, ZF, wallM); solid(X, 0, ZB, X + 1, Hh, ZF, wallM);
   solid(-X - 1, 0, ZB - 1, X + 1, Hh, ZB, wallM); solid(-X - 1, 0, ZF, X + 1, Hh, ZF + 1, wallM);
   solid(-X - 1, Hh, ZB - 1, X + 1, Hh + 1, ZF + 1, ceilM);
@@ -2947,18 +2962,271 @@ function buildRoom() {
     w.position.set(side * (X - 0.02), 8, z); w.rotation.y = -side * Math.PI / 2; world.add(w);
   });
   // ceiling lights
-  for (let z = ZF - 12; z > ZB + 4; z -= 16) for (const x of [-14, 0, 14]) {
-    const l = new THREE.Mesh(B(6, 0.12, 1.4), new THREE.MeshBasicMaterial({ color: 0xfffdf2 })); l.position.set(x, Hh - 0.07, z); world.add(l);
+  for (let z = ZF - 12; z > ZB + 4; z -= 16) for (const x of (X > 22 ? [-14, 0, 14] : [-8, 8])) {
+    const l = new THREE.Mesh(o.pendant ? new THREE.SphereGeometry(1, 16, 10, 0, 6.29, 0, Math.PI / 2) : B(6, 0.12, 1.4), new THREE.MeshBasicMaterial({ color: 0xfffdf2 }));
+    l.position.set(x, Hh - 0.07, z); if (o.pendant) { l.rotation.x = Math.PI; l.position.y = Hh - 1.2; } world.add(l);
   }
-  const logo = new THREE.Mesh(new THREE.PlaneGeometry(18, 5.3), logoMat()); logo.position.set(0, 10.5, ZB + 0.03); world.add(logo);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { const t = logo.material.map; t.userData.draw(t.userData.canvas.getContext('2d'), 1024, 300); t.needsUpdate = true; });
-  // the reception counter you stand on
-  const counterM = mat(0xc4a37e, { roughness: 0.7 }), counterTop = mat(0xf2f4f7, { roughness: 0.4 });
+  if (o.logo !== false) {
+    const logo = new THREE.Mesh(new THREE.PlaneGeometry(18, 5.3), logoMat()); logo.position.set(0, 10.5, ZB + 0.03); world.add(logo);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { const t = logo.material.map; t.userData.draw(t.userData.canvas.getContext('2d'), 1024, 300); t.needsUpdate = true; });
+  }
+  // the counter you stand on (reception desk, kitchen island…)
+  const counterM = mat(o.counter || 0xc4a37e, { roughness: 0.7 }), counterTop = mat(o.counterTop || 0xf2f4f7, { roughness: 0.4 });
   solid(-5, 0, -2, 5, 3.3, 3, counterM);
   const top = new THREE.Mesh(B(10.4, 0.2, 5.4), counterTop); top.position.set(0, 3.4, 0.5); world.add(top);
   platforms[platforms.length - 1].col.max.y = 3.5;
   G.camBox = { min: V(-X + 1.5, 1, ZB + 1.5), max: V(X - 1.5, Hh - 1.5, ZF - 1) };
 }
+/* ---------- house test map ---------- */
+const HOUSE = { name: 'Casa de pruebas', skyTop: '#7fc6f0', skyBot: '#fdf1e2', slime: 0x8aa4bf, plats: [0xe8d2b0], side: 0x8a5a3a };
+const HOUSE_ROOM = { x: 20, zFront: 8, zBack: -70, h: 13 };
+function woodFloorMat(w, d) {
+  const base = cachedTexMat('planks', () => canvasTex(128, 128, (g, W, H) => {
+    for (let i = 0; i < 8; i++) { g.fillStyle = ['#c48a52', '#b97c45', '#cf9660', '#bf834c'][i % 4]; g.fillRect(0, i * H / 8, W, H / 8); g.fillStyle = 'rgba(60,30,10,.35)'; g.fillRect(0, i * H / 8, W, 2); g.fillRect(((i * 37) % 100) + 10, i * H / 8, 2, H / 8); }
+    for (let i = 0; i < 160; i++) { g.fillStyle = 'rgba(90,50,20,.12)'; g.fillRect(Math.random() * W, Math.random() * H, 8, 1); }
+  }));
+  const t = base.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(w / 6, d / 6);
+  return new THREE.MeshStandardMaterial({ map: t, roughness: 0.6 });
+}
+const tvMat = () => new THREE.MeshStandardMaterial({ color: 0x5ad0ff, emissive: 0x2a8ac0, emissiveIntensity: 0.7, roughness: 0.2 });
+function coffeeTable(x, top, z) {
+  const g = officeGroup([[B(1.2, 0.06, 0.65), 0x8a5a3a, 0, 0.2, 0], [B(0.05, 0.38, 0.05), 0x5a3a20, -0.55, -0.02, -0.28], [B(0.05, 0.38, 0.05), 0x5a3a20, 0.55, -0.02, -0.28], [B(0.05, 0.38, 0.05), 0x5a3a20, -0.55, -0.02, 0.28], [B(0.05, 0.38, 0.05), 0x5a3a20, 0.55, -0.02, 0.28]]);
+  g.position.set(x, top + 0.21 * OS, z);
+  return mkProp('ctable', g, boxCol(x, top, z, 0.6, 0.23, 0.33), 0.5 * OS, 2, 70, 'Mesita');
+}
+function tvSet(x, top, z, face) {
+  const g = officeGroup([[B(1.5, 0.45, 0.45), 0x3b2a20, 0, -0.32, 0], [B(1.3, 0.75, 0.06), 0x15171c, 0, 0.32, 0], [B(1.2, 0.66, 0.01), tvMat(), 0, 0.32, 0.035]]);
+  g.position.set(x, top + 0.55 * OS, z); g.rotation.y = face;
+  const hx = Math.abs(Math.cos(face)) * 0.75 + Math.abs(Math.sin(face)) * 0.23, hz = Math.abs(Math.sin(face)) * 0.75 + Math.abs(Math.cos(face)) * 0.23;
+  return mkProp('tv', g, boxCol(x, top, z, hx, 0.56, hz), 0.8 * OS, 3, 160, 'Tele');
+}
+function bookshelf(x, top, z, face) {
+  const parts = [[B(1.1, 2, 0.35), 0x8a5a3a, 0, 0, 0]];
+  for (let r = 0; r < 4; r++) for (let i = 0; i < 6; i++) parts.push([B(0.12, 0.34, 0.26), pick([0xff3d7f, 0x3fb6ff, 0xffd23f, 0xa8f03a, 0x6b4fd8, 0xff8a12]), -0.4 + i * 0.16, -0.7 + r * 0.47, 0.06]);
+  const g = officeGroup(parts);
+  g.position.set(x, top + 1 * OS, z); g.rotation.y = face;
+  const hx = Math.abs(Math.cos(face)) * 0.55 + Math.abs(Math.sin(face)) * 0.18, hz = Math.abs(Math.sin(face)) * 0.55 + Math.abs(Math.cos(face)) * 0.18;
+  return mkProp('books', g, boxCol(x, top, z, hx, 1, hz), 1 * OS, 3.5, 140, 'Estantería', { impactFric: 0.5, rollFric: 3 });
+}
+function armchair(x, top, z, face) {
+  const c = 0xd8573a;
+  const g = officeGroup([[B(0.85, 0.4, 0.8), c, 0, -0.1, 0, { roughness: 0.9 }], [B(0.85, 0.55, 0.18), c, 0, 0.27, -0.32, { roughness: 0.9 }], [B(0.16, 0.45, 0.8), c, -0.42, 0.05, 0], [B(0.16, 0.45, 0.8), c, 0.42, 0.05, 0]]);
+  g.position.set(x, top + 0.3 * OS, z); g.rotation.y = face;
+  return mkProp('armchair', g, boxCol(x, top, z, 0.45, 0.27, 0.42), 0.6 * OS, 2.6, 90, 'Sillón');
+}
+function diningTable(x, top, z) {
+  const g = officeGroup([[B(2.2, 0.07, 1.2), 0xe8d2b0, 0, 0.37, 0], [B(0.07, 0.72, 0.07), 0x8a5a3a, -1, -0.03, -0.5], [B(0.07, 0.72, 0.07), 0x8a5a3a, 1, -0.03, -0.5], [B(0.07, 0.72, 0.07), 0x8a5a3a, -1, -0.03, 0.5], [B(0.07, 0.72, 0.07), 0x8a5a3a, 1, -0.03, 0.5]]);
+  g.position.set(x, top + 0.4 * OS, z);
+  return mkProp('dtable', g, boxCol(x, top, z, 1.1, 0.41, 0.6), 0.8 * OS, 3.2, 110, 'Mesa del comedor');
+}
+function woodChair(x, top, z, face) {
+  const g = officeGroup([[B(0.45, 0.05, 0.45), 0xc48a52, 0, -0.03, 0], [B(0.45, 0.5, 0.05), 0xc48a52, 0, 0.3, -0.2], ...[[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]].map(([a, b]) => [B(0.04, 0.45, 0.04), 0x8a5a3a, a, -0.27, b])]);
+  g.position.set(x, top + 0.5 * OS, z); g.rotation.y = face;
+  return mkProp('wchair', g, boxCol(x, top, z, 0.25, 0.53, 0.25), 0.4 * OS, 0.9, 40, 'Silla');
+}
+function plate(x, y0, z) {
+  const g = officeGroup([[Cy(0.14, 0.11, 0.025, 20), 0xfdfdf8, 0, 0, 0], [Cy(0.09, 0.09, 0.01, 16), 0xf0eee6, 0, 0.012, 0]]);
+  g.position.set(x, y0 + 0.013 * OS, z);
+  return mkProp('plate', g, { t: 'cyl', x, z, r: 0.14 * OS, y0, y1: y0 + 0.04 * OS }, 0.13 * OS, 0.12, 20, 'Plato');
+}
+function glass(x, y0, z) {
+  const g = officeGroup([[Cy(0.04, 0.035, 0.13, 12), new THREE.MeshStandardMaterial({ color: 0xbfe8ff, transparent: true, opacity: 0.5, roughness: 0.05 }), 0, 0, 0], [Cy(0.034, 0.03, 0.08, 12), 0xff8a12, 0, -0.02, 0]]);
+  g.position.set(x, y0 + 0.065 * OS, z);
+  return mkProp('glass', g, { t: 'cyl', x, z, r: 0.05 * OS, y0, y1: y0 + 0.13 * OS }, 0.07 * OS, 0.08, 20, 'Vaso', { liquid: 0xff8a12 });
+}
+function fruitBowl(x, y0, z) {
+  const parts = [[new THREE.SphereGeometry(0.17, 16, 8, 0, 6.29, Math.PI / 2, Math.PI / 2), 0x6bb8c9, 0, 0.12, 0, { side: THREE.DoubleSide }]];
+  [[0xff3355, -0.06, 0.03], [0xffd23f, 0.06, 0.02], [0xff8a12, 0, -0.06], [0x7b3fa0, 0.02, 0.07]].forEach(([c, a, b]) => parts.push([GEO.sphere, c, a, 0.08, b]));
+  const g = officeGroup(parts); g.children.slice(1).forEach(m => m.scale.setScalar(0.055));
+  g.position.set(x, y0, z);
+  return mkProp('bowl', g, { t: 'cyl', x, z, r: 0.17 * OS, y0, y1: y0 + 0.15 * OS }, 0.18 * OS, 0.3, 50, 'Frutero');
+}
+function fridge(x, top, z, face) {
+  const g = officeGroup([[B(0.8, 1.9, 0.7), 0xf2f4f7, 0, 0, 0, { roughness: 0.25 }], [B(0.78, 0.02, 0.01), 0xb8c2cc, 0, 0.35, 0.355], [B(0.04, 0.4, 0.04), 0x9aa6b2, 0.3, 0.65, 0.37], [B(0.04, 0.5, 0.04), 0x9aa6b2, 0.3, -0.2, 0.37], [B(0.12, 0.12, 0.01), 0xff3d7f, -0.2, 0.7, 0.355], [B(0.1, 0.14, 0.01), 0xffd23f, -0.05, 0.75, 0.355]]);
+  g.position.set(x, top + 0.95 * OS, z); g.rotation.y = face;
+  return mkProp('fridge', g, boxCol(x, top, z, 0.4, 0.95, 0.4), 1.1 * OS, 6, 180, 'Nevera', { impactFric: 0.5, rollFric: 3 });
+}
+function smallAppliance(kind, x, y0, z) {
+  const d = { micro: [[B(0.5, 0.3, 0.35), 0xf2f4f7, 0, 0, 0], [B(0.32, 0.22, 0.01), 0x22252b, -0.06, 0, 0.176], [B(0.08, 0.2, 0.01), 0x9aa6b2, 0.18, 0, 0.176]], toaster: [[B(0.28, 0.2, 0.18), 0xd8dee6, 0, 0, 0, { metalness: 0.6, roughness: 0.25 }], [B(0.2, 0.02, 0.04), 0x22252b, 0, 0.1, -0.03], [B(0.2, 0.02, 0.04), 0x22252b, 0, 0.1, 0.04]], pot: [[Cy(0.16, 0.14, 0.2, 18), 0x9e1b32, 0, 0, 0], [Cy(0.17, 0.17, 0.02, 18), 0x5a1020, 0, 0.11, 0], [B(0.08, 0.03, 0.03), 0x22252b, 0.2, 0.05, 0]] }[kind];
+  const h = { micro: 0.15, toaster: 0.1, pot: 0.11 }[kind], hx = { micro: 0.25, toaster: 0.14, pot: 0.17 }[kind], hz = { micro: 0.18, toaster: 0.09, pot: 0.17 }[kind];
+  const g = officeGroup(d); g.position.set(x, y0 + h * OS, z);
+  return mkProp(kind, g, boxCol(x, y0, z, hx, h, hz), Math.max(hx, h) * OS, { micro: 1.4, toaster: 0.6, pot: 0.8 }[kind], { micro: 80, toaster: 50, pot: 50 }[kind], { micro: 'Microondas', toaster: 'Tostadora', pot: 'Olla' }[kind], kind === 'pot' ? { liquid: 0xffa64d } : {});
+}
+function washer(x, top, z) {
+  const g = officeGroup([[B(0.6, 0.85, 0.6), 0xf2f4f7, 0, 0, 0], [Cy(0.2, 0.2, 0.02, 24), 0x9aa6b2, 0, -0.02, 0.3], [Cy(0.16, 0.16, 0.02, 24), new THREE.MeshStandardMaterial({ color: 0x7fd3ff, transparent: true, opacity: 0.6 }), 0, -0.02, 0.31], [B(0.5, 0.08, 0.01), 0x5a6b7d, 0, 0.36, 0.301]]);
+  g.children[1].rotation.x = g.children[2].rotation.x = Math.PI / 2;
+  g.position.set(x, top + 0.43 * OS, z);
+  return mkProp('washer', g, boxCol(x, top, z, 0.3, 0.43, 0.3), 0.55 * OS, 3, 110, 'Lavadora', { liquid: 0x7fd3ff });
+}
+function teddy(x, top, z) {
+  const c = 0xb07a4a, parts = [[GEO.sphere, c, 0, -0.1, 0], [GEO.sphere, c, 0, 0.15, 0], [GEO.sphere, c, -0.08, 0.27, 0], [GEO.sphere, c, 0.08, 0.27, 0], [GEO.sphere, 0xe8c8a0, 0, 0.12, 0.09], [GEO.sphere, 0x1a1030, -0.04, 0.18, 0.1], [GEO.sphere, 0x1a1030, 0.04, 0.18, 0.1]];
+  const g = officeGroup(parts); [[0.17, 0.2, 0.15], [0.12, 0.12, 0.12], [0.045, 0.045, 0.03], [0.045, 0.045, 0.03], [0.05, 0.04, 0.03], [0.015, 0.015, 0.01], [0.015, 0.015, 0.01]].forEach((sc, i) => g.children[i].scale.set(...sc));
+  g.position.set(x, top + 0.27 * OS, z); g.rotation.y = facePlayer(x, z);
+  return mkProp('teddy', g, { t: 'cyl', x, z, r: 0.18 * OS, y0: top, y1: top + 0.6 * OS }, 0.3 * OS, 0.5, 60, 'Osito');
+}
+function beachBall(x, top, z, rr) {
+  const m = new THREE.Mesh(GEO.sphere, ballMat); m.scale.setScalar(rr); m.position.set(x, top + rr, z);
+  return mkProp('ball', m, { t: 'sph', c: V(x, top + rr, z), r: rr }, rr, 0.25, 40, 'Pelota');
+}
+function rug(x, z, w, d) {
+  const t = cachedTexMat('rug', () => canvasTex(128, 96, (g, W, H) => { g.fillStyle = '#d8573a'; g.fillRect(0, 0, W, H); g.strokeStyle = '#ffd23f'; g.lineWidth = 6; g.strokeRect(8, 8, W - 16, H - 16); g.fillStyle = '#3fb6ff'; g.beginPath(); g.ellipse(W / 2, H / 2, 28, 18, 0, 0, 6.3); g.fill(); }));
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshStandardMaterial({ map: t, roughness: 1 })); m.rotation.x = -Math.PI / 2; m.position.set(x, 0.03, z); m.receiveShadow = true; world.add(m);
+}
+function genHouse() {
+  clearWorld();
+  const theme = G.theme = HOUSE;
+  setSky(theme); scene.fog = new THREE.Fog(0xfdf1e2, 80, 220); setSunArea(-32, 44);
+  buildRoom(HOUSE_ROOM, { floor: woodFloorMat, wall: 0xf6e7c8, base: 0x8a5a3a, logo: false, pendant: true, counter: 0x6bb8c9, counterTop: 0xf2f4f7 });
+  // living room
+  rug(0, -21, 18, 12);
+  sofa(-12.5, 0, -21, Math.PI / 2); armchair(-4, 0, -30, 0.2); coffeeTable(0, 0, -21);
+  const ct = props[props.length - 1], y0 = 0.42 * OS;
+  ct.above.push(mug(-0.8, y0, -21.3), papers(0.9, y0, -20.8), keyboard(0, y0, -20.4));
+  tvSet(13.5, 0, -21, -Math.PI / 2);
+  bookshelf(-18.6, 0, -11, Math.PI / 2); bookshelf(-18.6, 0, -33, Math.PI / 2);
+  floorLamp(-16, 0, -27); ficus(16.5, 0, -9); ficus(-16.5, 0, -40);
+  teddy(7, 0, -11); beachBall(-6, 0, -12, 1.3); beachBall(10, 0, -32, 0.9);
+  [[4, -12], [4.9, -11.4], [4.3, -12.9]].forEach(([x, z], i) => crate(x, 0.48, z, [0xff3d7f, 0x3fb6ff, 0xffd23f][i]));
+  // kitchen
+  const dt = diningTable(0, 0, -47), ty = 0.81 * OS;
+  dt.above.push(plate(-1.8, ty, -47.9), plate(1.8, ty, -47.9), plate(-1.8, ty, -46.1), plate(1.8, ty, -46.1), glass(-0.9, ty, -47.6), glass(0.9, ty, -46.4), fruitBowl(0, ty, -47));
+  woodChair(-1.8, 0, -50.2, 0); woodChair(1.8, 0, -50.2, 0); woodChair(-1.8, 0, -43.8, Math.PI); woodChair(1.8, 0, -43.8, Math.PI);
+  // worktop along the back wall with appliances on it
+  const wt = 0.92 * OS;
+  solid(-13, 0, -69.9, 13, wt, -66.4, mat(0x6bb8c9, { roughness: 0.6 }));
+  const topM = new THREE.Mesh(B(26.4, 0.2, 3.7), mat(0xf2f4f7, { roughness: 0.3 })); topM.position.set(0, wt + 0.1, -68.1); world.add(topM);
+  platforms[platforms.length - 1].col.max.y = wt + 0.2;
+  smallAppliance('micro', -9, wt + 0.2, -68); smallAppliance('toaster', -3.5, wt + 0.2, -67.8); smallAppliance('pot', 2.5, wt + 0.2, -67.8); smallAppliance('pot', 6, wt + 0.2, -68.2);
+  mug(9.5, wt + 0.2, -67.6); glass(10.5, wt + 0.2, -67.9); fruitBowl(-6.2, wt + 0.2, -68);
+  fridge(-17.4, 0, -65, Math.PI / 2); washer(17.3, 0, -64); bin(14, 0, -58);
+  [[-15, -55], [-14, -56.2]].forEach(([x, z]) => { const b = barrel(x, 0, z); b.mesh.scale.setScalar(1.6); b.col.r *= 1.6; b.col.y1 = 1.6; b.mesh.position.y = 0.8; b.r *= 1.6; });
+  for (let i = 0; i < 4; i++) balloon(-4.5 + i * 3, 7.5 + (i % 2), -40, 2.2);
+  G.pov = { pos: V(0, 3.5 + 1.6, 0.4), yaw0: 0, pitch: -0.15 };
+}
+
+/* ---------- giant picnic test map: normal fruit, enormous food ---------- */
+const PICNIC = { name: 'Picnic gigante', skyTop: '#4aa8ff', skyBot: '#e8f8ff', slime: 0x4fb6e8, plats: [0x6fc13a], side: 0x4e8f2a };
+function grassMat(w, d) {
+  const base = cachedTexMat('grass', () => canvasTex(128, 128, (g, W, H) => {
+    g.fillStyle = '#6fc13a'; g.fillRect(0, 0, W, H);
+    for (let i = 0; i < 900; i++) { g.fillStyle = ['#5fae2e', '#82d24a', '#4e9a26', '#8fdc55'][i % 4]; g.fillRect(Math.random() * W, Math.random() * H, 1.5, rand(3, 7)); }
+  }));
+  const t = base.clone(); t.needsUpdate = true; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(w / 8, d / 8);
+  return new THREE.MeshStandardMaterial({ map: t, roughness: 1 });
+}
+function cyl(r1, r2, h, n = 28) { return new THREE.CylinderGeometry(r1, r2, h, n); }
+function foodProp(kind, parts, x, y, z, col, r, mass, pts, label, extra) {
+  const g = new THREE.Group();
+  parts.forEach(([geo, color, px, py, pz, opts]) => { const m = new THREE.Mesh(geo, typeof color === 'number' ? mat(color, opts || {}) : color); m.position.set(px, py, pz); g.add(m); });
+  g.position.set(x, y, z);
+  return mkProp(kind, g, col, r, mass, pts, label, extra || {});
+}
+function sandwich(x, z) {
+  const layers = [['Pan', 0xe0b070, 6, 1, 5], ['Lechuga', 0x6fc13a, 6.6, 0.35, 5.6], ['Jamón', 0xff9cae, 5.8, 0.5, 4.8], ['Queso', 0xffd23f, 6.3, 0.3, 5.3], ['Tomate', 0xe0201a, 5.5, 0.45, 4.5], ['Pan', 0xe0b070, 6, 1.1, 5]];
+  let y = 0; const made = [];
+  layers.forEach(([label, c, w, h, d], i) => {
+    const p = foodProp('layer', [[B(w, h, d), c, 0, 0, 0, { roughness: i === 0 || i === 5 ? 0.8 : 0.45 }]], x + rand(-0.15, 0.15), y + h / 2, z + rand(-0.15, 0.15), { t: 'box', min: V(x - w / 2, y, z - d / 2), max: V(x + w / 2, y + h, z + d / 2) }, Math.max(w, d) * 0.4, 2.2, 60, label, i === 4 ? { liquid: 0xe0201a } : {});
+    p.mesh.rotation.y = rand(-0.08, 0.08); made.push(p); y += h;
+  });
+  for (let i = 0; i < made.length - 1; i++) made[i].above.push(made[i + 1]);
+}
+function cupPyramid(x, z) {
+  const made = [], sp = 2;
+  for (let row = 0; row < 4; row++) for (let i = 0; i < 4 - row; i++) {
+    const cx = x + (i - (3 - row) / 2) * sp, cy = row * 2.25;
+    made.push(foodProp('cup', [[cyl(0.95, 0.7, 2.2), 0xe0201a, 0, 0, 0, { roughness: 0.3 }], [cyl(0.97, 0.97, 0.25), 0xfdfdf8, 0, 0.9, 0]], cx, cy + 1.1, z, { t: 'cyl', x: cx, z, r: 0.95, y0: cy, y1: cy + 2.2 }, 1.1, 0.7, 30, 'Vaso'));
+  }
+  made.forEach(a => made.forEach(b => { const dy = b.pos.y - a.pos.y; if (dy > 1 && dy < 3 && Math.abs(b.pos.x - a.pos.x) < 1.9) a.above.push(b); }));
+}
+function sodaCan(x, z) {
+  return foodProp('can', [[cyl(1.3, 1.3, 4.4), 0xd81f2a, 0, 0, 0, { metalness: 0.5, roughness: 0.3 }], [cyl(1.15, 1.3, 0.25), 0xd8dee6, 0, 2.3, 0, { metalness: 0.8, roughness: 0.2 }], [B(1.2, 0.8, 0.05), 0xfdfdf8, 0, 0.3, 1.29]], x, 2.2, z, { t: 'cyl', x, z, r: 1.3, y0: 0, y1: 4.5 }, 1.8, 3, 120, 'Lata gigante', { liquid: 0x6b2a12 });
+}
+function juiceBox(x, z) {
+  const straw = new THREE.Mesh(cyl(0.08, 0.08, 1.6, 8), mat(0xffffff)); straw.position.set(0.4, 2.4, 0); straw.rotation.z = -0.3;
+  const p = foodProp('jbox', [[B(2.2, 3.6, 1.4), 0xff8a12, 0, 0, 0], [B(1.5, 1.5, 0.02), 0xffd23f, 0, 0.2, 0.71]], x, 1.8, z, { t: 'box', min: V(x - 1.1, 0, z - 0.7), max: V(x + 1.1, 3.6, z + 0.7) }, 1.6, 2, 100, 'Zumo gigante', { liquid: 0xff8a12 });
+  p.mesh.add(straw); shadowAll(p.mesh); return p;
+}
+function bigCake(x, z) {
+  return foodProp('bigcake', [[cyl(3.5, 3.6, 2.2), 0xff9cc6, 0, -1.9, 0], [cyl(3.55, 3.55, 0.25), 0xfff8ec, 0, -0.75, 0], [cyl(2.4, 2.5, 1.8), 0xfff0d0, 0, 0.3, 0], [cyl(1.4, 1.5, 1.4), 0xff9cc6, 0, 1.9, 0], [GEO.sphere, 0xe0102f, 0, 2.95, 0]], x, 3, z, { t: 'cyl', x, z, r: 3.5, y0: 0, y1: 6.2 }, 2.8, 6, 250, 'Tarta gigante', { liquid: 0xfff8ec });
+}
+function cheese(x, z) {
+  const sh = new THREE.Shape(); sh.moveTo(-2.6, 0); sh.lineTo(2.6, 0); sh.lineTo(-2.6, 3); sh.lineTo(-2.6, 0);
+  const geo = new THREE.ExtrudeGeometry(sh, { depth: 3, bevelEnabled: false }); geo.translate(0, -1.5, -1.5);
+  const parts = [[geo, 0xffd23f, 0, 0, 0, { roughness: 0.5 }]];
+  [[-1.5, -0.6, 1.51], [-0.4, -1, 1.51], [-1.9, 0.6, 1.51], [0.6, -1.1, -1.51]].forEach(([a, b, c]) => parts.push([GEO.sphere, 0xe0a820, a, b, c]));
+  const p = foodProp('cheese', parts, x, 1.5, z, { t: 'box', min: V(x - 2.6, 0, z - 1.5), max: V(x + 2.6, 3, z + 1.5) }, 2, 4, 150, 'Queso gigante');
+  p.mesh.children.slice(1).forEach(m => m.scale.set(0.35, 0.35, 0.06)); return p;
+}
+function cookieStack(x, z) {
+  const made = [];
+  for (let i = 0; i < 4; i++) {
+    const parts = [[cyl(2, 2, 0.6), 0xc8873f, 0, 0, 0, { roughness: 0.9 }]];
+    for (let k = 0; k < 7; k++) { const a = k * 0.9 + i; parts.push([GEO.sphere, 0x3b1d0e, Math.cos(a) * rand(0.4, 1.6), 0.3, Math.sin(a) * rand(0.4, 1.6)]); }
+    const p = foodProp('cookie', parts, x + rand(-0.2, 0.2), 0.3 + i * 0.62, z + rand(-0.2, 0.2), { t: 'cyl', x, z, r: 2, y0: i * 0.62, y1: i * 0.62 + 0.6 }, 1.4, 1, 40, 'Galleta');
+    p.mesh.children.slice(1).forEach(m => m.scale.set(0.2, 0.08, 0.2)); made.push(p);
+  }
+  for (let i = 0; i < 3; i++) made[i].above.push(made[i + 1]);
+}
+function donut(x, z) {
+  const p = foodProp('donut', [[new THREE.TorusGeometry(1.8, 0.95, 16, 32), 0xd9915a, 0, 0, 0, { roughness: 0.8 }], [new THREE.TorusGeometry(1.8, 1.0, 16, 32, Math.PI * 2), 0xff8fc4, 0, 0, 0.28, { roughness: 0.4 }]], x, 2.8, z, { t: 'sph', c: V(x, 2.8, z), r: 2.7 }, 2.7, 2.2, 120, 'Dónut');
+  p.mesh.children[1].scale.z = 0.6; p.mesh.rotation.y = facePlayer(x, z);
+  for (let i = 0; i < 26; i++) { const a = rand(0, 6.28), rr = 1.8 + rand(-0.8, 0.8); const sp = new THREE.Mesh(GEO.chunk, mat(pick([0xffffff, 0x3fb6ff, 0xffd23f, 0xa8f03a]))); sp.scale.set(0.12, 0.4, 0.12); sp.position.set(Math.cos(a) * rr, Math.sin(a) * rr, 0.95); sp.rotation.z = rand(0, 3); p.mesh.add(sp); }
+  return p;
+}
+function sauceBottle(x, z, color, label) {
+  return foodProp('sauce', [[cyl(0.9, 0.95, 3.6, 20), color, 0, 0, 0, { roughness: 0.3 }], [cyl(0.5, 0.9, 0.6, 20), color, 0, 2.1, 0], [cyl(0.3, 0.4, 0.6, 12), 0xfdfdf8, 0, 2.7, 0]], x, 1.8, z, { t: 'cyl', x, z, r: 0.95, y0: 0, y1: 5.1 }, 1.3, 1.2, 80, label, { liquid: color });
+}
+function hotdog(x, z) {
+  const bun = new THREE.CylinderGeometry(0.9, 0.9, 5, 16); bun.rotateZ(Math.PI / 2);
+  const sausage = new THREE.CylinderGeometry(0.62, 0.62, 5.8, 16); sausage.rotateZ(Math.PI / 2);
+  const p = foodProp('hotdog', [[cyl(2.8, 2.6, 0.12, 32), 0xfdfdf8, 0, -0.85, 0], [bun, 0xe0a860, 0, -0.1, 0, { roughness: 0.8 }], [sausage, 0xb8452a, 0, 0.45, 0, { roughness: 0.35 }], [B(4.6, 0.12, 0.35), 0xffd23f, 0, 1.08, 0]], x, 0.9, z, { t: 'box', min: V(x - 2.9, 0, z - 1.1), max: V(x + 2.9, 2.1, z + 1.1) }, 2.2, 2.2, 110, 'Perrito', { liquid: 0xd01020 });
+  p.mesh.rotation.y = rand(-0.5, 0.5); return p;
+}
+function basket(x, z) {
+  const wick = cachedTexMat('wicker', () => new THREE.MeshStandardMaterial({ roughness: 0.9, map: canvasTex(64, 64, (g, w, h) => { g.fillStyle = '#c8975a'; g.fillRect(0, 0, w, h); g.fillStyle = '#a8763c'; for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) if ((i + j) % 2) g.fillRect(i * 8, j * 8, 8, 8); }) }));
+  const handle = new THREE.Mesh(new THREE.TorusGeometry(1.7, 0.15, 8, 24, Math.PI), mat(0x8a6237)); handle.position.y = 1.2;
+  const bread = new THREE.Mesh(cyl(0.45, 0.4, 3.4, 12), mat(0xe0b070)); bread.position.set(0.9, 1.6, 0.4); bread.rotation.z = -0.6;
+  const p = foodProp('basket', [[B(4, 2.4, 3), wick, 0, 0, 0], [B(4.1, 0.2, 3.1), 0xd81f2a, 0, 1.25, 0]], x, 1.2, z, { t: 'box', min: V(x - 2, 0, z - 1.5), max: V(x + 2, 2.6, z + 1.5) }, 2.2, 3, 100, 'Cesta');
+  p.mesh.add(handle, bread); shadowAll(p.mesh); return p;
+}
+function melonSlice(x, z) {
+  const sh = new THREE.Shape(); sh.absarc(0, 0, 3, 0, Math.PI, false); sh.lineTo(3, 0);
+  const geo = new THREE.ExtrudeGeometry(sh, { depth: 1.2, bevelEnabled: false, curveSegments: 20 }); geo.translate(0, 0, -0.6);
+  const rind = new THREE.ExtrudeGeometry((() => { const r = new THREE.Shape(); r.absarc(0, 0, 3.35, 0, Math.PI, false); r.lineTo(-3, 0); r.absarc(0, 0, 3, Math.PI, 0, true); r.lineTo(3.35, 0); return r; })(), { depth: 1.25, bevelEnabled: false, curveSegments: 20 }); rind.translate(0, 0, -0.62);
+  const parts = [[geo, 0xff3355, 0, 0, 0, { roughness: 0.4 }], [rind, 0x2f8a35, 0, 0, 0]];
+  for (let i = 0; i < 9; i++) { const a = 0.4 + i * 0.27; parts.push([GEO.sphere, 0x1a1410, Math.cos(a) * 1.8, Math.sin(a) * 1.8, 0.62]); }
+  const p = foodProp('slice', parts, x, 0, z, { t: 'box', min: V(x - 3.3, 0, z - 0.7), max: V(x + 3.3, 3.3, z + 0.7) }, 2.2, 2, 100, 'Rodaja de sandía', { liquid: 0xff2a4d });
+  p.mesh.children.slice(2).forEach(m => m.scale.set(0.12, 0.2, 0.05)); p.mesh.rotation.y = facePlayer(x, z) * 0.5;
+  p.mesh.position.y = 0.01; p.pos.y = 0.01; return p;
+}
+function tree(x, z, h) {
+  const g = new THREE.Group();
+  const t = new THREE.Mesh(cyl(0.7, 1, h * 0.5, 10), mat(0x7a4a2a, { roughness: 1 })); t.position.y = h * 0.25; g.add(t);
+  for (let i = 0; i < 5; i++) { const s = new THREE.Mesh(GEO.lowSphere, mat(pick([0x4e9a26, 0x5fae2e, 0x6fc13a]), { roughness: 1, flatShading: true })); s.scale.setScalar(h * rand(0.22, 0.32)); s.position.set(rand(-1, 1) * h * 0.18, h * rand(0.55, 0.8), rand(-1, 1) * h * 0.18); g.add(s); }
+  g.position.set(x, 0, z); shadowAll(g); world.add(g);
+}
+function genPicnic() {
+  clearWorld();
+  const theme = G.theme = PICNIC;
+  setSky(theme); makeSlime(theme); bigDecor(null); setSunArea(-42, 58);
+  OS = 1;
+  addPlatform(0, 0, -45, 84, 112, 0x6fc13a, theme, grassMat(84, 112));
+  const blanket = new THREE.Mesh(new THREE.PlaneGeometry(40, 36), new THREE.MeshStandardMaterial({ roughness: 1, map: (() => { const t = canvasTex(128, 128, (g, w, h) => { for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) { g.fillStyle = (i + j) % 2 ? '#e8303a' : '#fdf3ee'; g.fillRect(i * 16, j * 16, 16, 16); } }); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3, 3); return t; })() }));
+  blanket.rotation.x = -Math.PI / 2; blanket.position.set(0, 0.03, -40); blanket.receiveShadow = true; world.add(blanket);
+  // you stand on the cool box
+  solid(-2.6, 0, -1, 2.6, 2.3, 2, mat(0x3fb6ff, { roughness: 0.5 }));
+  const lid = new THREE.Mesh(B(5.4, 0.3, 3.2), mat(0xfdfdf8)); lid.position.set(0, 2.45, 0.5); world.add(lid);
+  platforms[platforms.length - 1].col.max.y = 2.6;
+  sandwich(-9, -27); cupPyramid(9, -26); sodaCan(-17, -40); juiceBox(15, -41); bigCake(0, -52);
+  cheese(-9, -62); cookieStack(14, -60); donut(-19, -58); sauceBottle(5, -37, 0xd01020, 'Kétchup'); sauceBottle(7.3, -38.5, 0xffd23f, 'Mostaza');
+  hotdog(-2, -36); basket(18, -30); melonSlice(-15, -30);
+  [[3, -46], [4, -47.2], [2.2, -47.4]].forEach(([x, z]) => { const b = barrel(x, 0, z); b.mesh.scale.setScalar(1.8); b.col.r *= 1.8; b.col.y1 = 1.8; b.mesh.position.y = 0.9; b.r *= 1.8; });
+  for (let i = 0; i < 5; i++) balloon(-8 + i * 4, 9 + (i % 2) * 1.5, -46, 3);
+  [[-34, -20, 18], [33, -32, 22], [-30, -80, 24], [30, -86, 20], [0, -96, 26], [-38, -50, 16]].forEach(([x, z, h]) => tree(x, z, h));
+  OS = 3;
+  G.pov = { pos: V(0, 2.6 + 1.6, 0.4), yaw0: 0, pitch: -0.12 };
+}
+
 function genOffice() {
   clearWorld();
   const theme = G.theme = OFFICE;
@@ -3021,7 +3289,7 @@ function startSandbox(kind) {
   G.node = null; G.daily = null; G.sandbox = kind; G.labMap = kind; G.scen = 2;
   $('#end').hidden = true; $('#menu').hidden = true; $('#daily').hidden = true;
   const keep = G.labSel || 0;
-  startLevel(kind === 'tunnel' ? 2 : 1, false, kind === 'tunnel' ? 5151 : kind === 'office' ? 6161 : 4242);
+  startLevel(kind === 'tunnel' ? 2 : 1, false, LAB_SEED[kind] || 4242);
   G.sel = keep; loadFruit(); renderTray();
 }
 function goMenu() {
@@ -3059,12 +3327,11 @@ $('#pauseExit').addEventListener('click', () => {
   G.sandbox = null; SFX.tick(); goMenu();
 });
 $('#bagBack').addEventListener('click', () => { SFX.tick(); goMenu(); });
-const LAB_NEXT = { office: 'islands', islands: 'tunnel', tunnel: 'office' };
-const LAB_NAME = { office: 'Oficina de pruebas', islands: 'Islas de prueba', tunnel: 'Túnel de prueba' };
-const LAB_SHORT = { office: 'oficina', islands: 'islas', tunnel: 'túnel' };
+const LAB_NAME = { office: 'Oficina de pruebas', house: 'Casa de pruebas', picnic: 'Picnic gigante', islands: 'Islas de prueba', tunnel: 'Túnel de prueba' };
+const LAB_SEED = { office: 6161, house: 7171, picnic: 8181, islands: 4242, tunnel: 5151 };
 $('#labBtn').addEventListener('click', () => { audioOn(); SFX.tick(); startSandbox(G.labMap || 'office'); });
 $('#labReset').addEventListener('click', () => { if (G.state === 'aim') startSandbox(G.sandbox); });
-$('#labSwitch').addEventListener('click', () => { if (G.state === 'aim') startSandbox(LAB_NEXT[G.sandbox] || 'office'); });
+$('#labSwitch').addEventListener('change', e => { const v = e.target.value; if (G.state === 'aim' || G.state === 'idle') startSandbox(v); else e.target.value = G.sandbox; });
 $('#labExit').addEventListener('click', () => { G.sandbox = null; goMenu(); });
 
 function startNode(node) { G.daily = null; G.sandbox = null; G.node = node; G.scen = node.diff; startLevel(node.type === 'islands' ? 1 : 2, false, node.seed); }
@@ -3076,7 +3343,7 @@ function startLevel(level, tutorial = false, seed = 0) {
   G.baseSum = 0; G.totalTargets = 0; G.levelScore = 0; G.combo = 0; G.starsShown = 0;
   G.state = 'idle';
   if (seed) RNG = mulberry32(seed);
-  if (tutorial) genTutorial(); else if (G.sandbox === 'islands') genSandbox(); else if (G.sandbox === 'office') genOffice(); else if (level === 1) genIslands(); else genTunnel();
+  if (tutorial) genTutorial(); else if (G.sandbox === 'islands') genSandbox(); else if (G.sandbox === 'office') genOffice(); else if (G.sandbox === 'house') genHouse(); else if (G.sandbox === 'picnic') genPicnic(); else if (level === 1) genIslands(); else genTunnel();
   let t;
   if (tutorial) t = ['platano', 'sandia', 'naranja'];
   else {
@@ -3095,7 +3362,7 @@ function startLevel(level, tutorial = false, seed = 0) {
   if (G.sandbox) { $('#lvlNum').textContent = 'Campo de pruebas'; $('#lvlName').textContent = LAB_NAME[G.sandbox]; }
   $('#labBar').hidden = !G.sandbox;
   stage.classList.toggle('lab', !!G.sandbox);
-  if (G.sandbox) $('#labSwitch').textContent = 'Ir a ' + LAB_SHORT[LAB_NEXT[G.sandbox]] + ' ▸';
+  if (G.sandbox) $('#labSwitch').value = G.sandbox;
   G.tray = t; G.used = t.map(() => false); G.sel = 0;
   G.yaw = 0; G.yawS = 0; G.pull = 0; G.pullS = 0; G.pouchX = 0; G.pouchXS = 0; G.drag = null;
   G.camMode = 'pov';
