@@ -1684,8 +1684,12 @@ function updateSling(dt) {
   holder.position.set(POUCH_REST.x + G.pouchXS, POUCH_REST.y - pv * 0.07, POUCH_REST.z + pv * 0.42);
   // tension you can feel without shaking: the frame leans back, tilts with your aim, breathes when idle
   const idle = G.drag ? 0 : 1;
-  sling.position.set(SLING_BASE.x + Math.sin(T * 0.9) * 0.004 * idle, SLING_BASE.y + ps * 0.02 + Math.sin(T * 1.3) * 0.003 * idle, SLING_BASE.z + ps * 0.03);
-  sling.rotation.set(-ps * 0.07 + G.recoil * 0.3, 0, -G.pouchXS * 1.2);
+  // past ~70 % the arms start to tremble, harder towards full draw
+  const tr = G.drag ? Math.pow(clamp((ps - 0.7) / 0.3, 0, 1), 1.5) : 0;
+  const shx = tr * 0.007 * (Math.sin(T * 47) + Math.sin(T * 73 + 1.3)) * 0.5, shy = tr * 0.006 * (Math.sin(T * 59 + 0.7) + Math.sin(T * 83 + 2.1)) * 0.5;
+  holder.position.x += shx * 1.6; holder.position.y += shy * 1.6;
+  sling.position.set(SLING_BASE.x + shx + Math.sin(T * 0.9) * 0.004 * idle, SLING_BASE.y + ps * 0.02 + shy + Math.sin(T * 1.3) * 0.003 * idle, SLING_BASE.z + ps * 0.03);
+  sling.rotation.set(-ps * 0.07 + G.recoil * 0.3 + shy * 1.5, 0, -G.pouchXS * 1.2 + shx * 2);
   bandMat.color.copy(bandCalm).lerp(bandTight, ps);
   if (G.drag) {
     G.fovKick = smoothTo(G.fovKick, -ps * 8, 8, dt);
@@ -1712,41 +1716,52 @@ function updateSling(dt) {
   });
 }
 
-// continuous rubber-stretch sound that follows how fast and how far you pull
+// Drawing a bow or stretching a rubber band: lots of tiny stick-slip creaks that come faster and
+// higher as you pull, a faint rising squeak while moving, and slow wooden creaks while you hold.
 const TENSION = (() => {
-  let nodes = null, prev = 0;
-  function start() {
-    if (!AC || muted || nodes) return;
-    const out = AC.createGain(); out.gain.value = 0; out.connect(AC.destination);
-    const osc = AC.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = 80;
-    const lfo = AC.createOscillator(); lfo.frequency.value = 7; const lfoG = AC.createGain(); lfoG.gain.value = 3; lfo.connect(lfoG).connect(osc.frequency);
-    const bp = AC.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 5; bp.frequency.value = 400;
-    const oscG = AC.createGain(); oscG.gain.value = 0.5;
-    osc.connect(bp).connect(oscG).connect(out);
+  let on = false, prev = 0, acc = 0, holdT = 0, squeak = null;
+  function grain(t, freq, vol, len, q = 9) {
     if (!noiseBuf) { noiseBuf = AC.createBuffer(1, AC.sampleRate, AC.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
-    const nz = AC.createBufferSource(); nz.buffer = noiseBuf; nz.loop = true;
-    const nf = AC.createBiquadFilter(); nf.type = 'bandpass'; nf.Q.value = 1.2; nf.frequency.value = 1500;
-    const nG = AC.createGain(); nG.gain.value = 0;
-    nz.connect(nf).connect(nG).connect(out);
-    osc.start(); lfo.start(); nz.start();
-    nodes = { out, osc, lfo, bp, nz, nf, nG };
-    prev = G.pullS || 0;
+    const src = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+    src.buffer = noiseBuf; f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = q;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    src.connect(f).connect(g).connect(AC.destination); src.start(t, Math.random() * 0.9); src.stop(t + len + 0.01);
+  }
+  function start() {
+    if (!AC || muted || on) return;
+    on = true; prev = G.pullS || 0; acc = 0; holdT = 0.3;
+    const o = AC.createOscillator(), f = AC.createBiquadFilter(), g = AC.createGain();
+    o.type = 'triangle'; o.frequency.value = 180; f.type = 'bandpass'; f.Q.value = 3; f.frequency.value = 900; g.gain.value = 0;
+    o.connect(f).connect(g).connect(AC.destination); o.start();
+    squeak = { o, f, g };
   }
   function stop() {
-    if (!nodes) return;
-    const n = nodes, t = AC.currentTime; nodes = null;
-    n.out.gain.cancelScheduledValues(t); n.out.gain.setTargetAtTime(0, t, 0.02);
-    [n.osc, n.lfo, n.nz].forEach(o => o.stop(t + 0.15));
+    if (!on) return;
+    on = false;
+    if (squeak) { const t = AC.currentTime; squeak.g.gain.setTargetAtTime(0, t, 0.02); squeak.o.stop(t + 0.12); squeak = null; }
   }
   function update(dt) {
-    if (!nodes) return;
+    if (!on || !AC) return;
     const p = G.pullS || 0, speed = Math.abs(p - prev) / Math.max(dt, 0.001); prev = p;
-    const t = AC.currentTime;
-    nodes.out.gain.setTargetAtTime(Math.min(0.11, 0.012 + p * 0.02 + speed * 0.05), t, 0.03);
-    nodes.osc.frequency.setTargetAtTime(60 + p * 170 + speed * 20, t, 0.04);
-    nodes.bp.frequency.setTargetAtTime(280 + p * 1300 + speed * 300, t, 0.04);
-    nodes.nG.gain.setTargetAtTime(Math.min(0.5, speed * 0.25), t, 0.03);
-    nodes.nf.frequency.setTargetAtTime(900 + p * 2200, t, 0.05);
+    const t = AC.currentTime, moving = speed > 0.05;
+    // stick-slip grains while the band is moving
+    acc += (moving ? 18 + speed * 70 + p * 30 : 0) * dt;
+    while (acc >= 1) { acc -= 1; grain(t + Math.random() * dt, 500 + p * 2600 + Math.random() * 300, (0.02 + p * 0.05) * (0.5 + Math.random() * 0.7), 0.012 + Math.random() * 0.01); }
+    // the faint rising squeak of stretching rubber
+    if (squeak) {
+      squeak.o.frequency.setTargetAtTime(170 + p * 520, t, 0.03);
+      squeak.f.frequency.setTargetAtTime(700 + p * 1800, t, 0.04);
+      squeak.g.gain.setTargetAtTime(moving ? Math.min(0.05, 0.008 + speed * 0.03) * (0.4 + p) : 0.004 + p * 0.006, t, 0.04);
+    }
+    // holding a strong draw: slow, low wooden creaks of the frame
+    if (!moving && p > 0.35) {
+      holdT -= dt;
+      if (holdT <= 0) {
+        holdT = rand(0.22, 0.55) * (1.4 - p);
+        const base = 220 + p * 260, n = 3 + Math.floor(Math.random() * 4);
+        for (let i = 0; i < n; i++) grain(t + i * rand(0.012, 0.025), base * rand(0.85, 1.2), 0.04 + p * 0.05, 0.02, 6);
+      }
+    }
   }
   return { start, stop, update };
 })();
@@ -3334,13 +3349,20 @@ const SFX = {
   // the release: a deep rubber twang + leather slap, bigger with more power
   twang: k => {
     if (!AC || muted) return;
-    const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain(), f = AC.createBiquadFilter();
-    o.type = 'triangle'; o.frequency.setValueAtTime(140 + k * 90, t); o.frequency.exponentialRampToValueAtTime(55, t + 0.35);
-    f.type = 'lowpass'; f.frequency.setValueAtTime(2400, t); f.frequency.exponentialRampToValueAtTime(300, t + 0.3);
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16 + k * 0.12, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
-    o.connect(f).connect(g).connect(AC.destination); o.start(t); o.stop(t + 0.42);
-    tone(320 + k * 160, 120, 0.12, 'sine', 0.08 + k * 0.06);
-    noise(0.05, 0.12 + k * 0.1, 3500, 'highpass');
+    const t = AC.currentTime, f0 = 95 + k * 70;
+    // plucked string: fundamental and two harmonics with a quick pitch sag, through a closing lowpass
+    const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(3200, t); lp.frequency.exponentialRampToValueAtTime(400, t + 0.45); lp.connect(AC.destination);
+    [[1, 0.2], [2.01, 0.09], [3.02, 0.05]].forEach(([h, v]) => {
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.type = h === 1 ? 'triangle' : 'sine';
+      o.frequency.setValueAtTime(f0 * h * 1.06, t); o.frequency.exponentialRampToValueAtTime(f0 * h, t + 0.05);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v * (0.6 + k * 0.7), t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55 - h * 0.08);
+      o.connect(g).connect(lp); o.start(t); o.stop(t + 0.6);
+    });
+    // the string slapping the frame and the air it pushes
+    noise(0.03, 0.14 + k * 0.12, 2800, 'highpass');
+    tone(240 + k * 120, 90, 0.09, 'sine', 0.08 + k * 0.05);
+    if (k > 0.3) noise(0.22, 0.05 + k * 0.08, 900 + k * 900, 'bandpass');
   },
   untwang: () => tone(260, 150, 0.12, 'triangle', 0.04),
   launch: () => { tone(260, 900, 0.18, 'triangle', 0.14); noise(0.2, 0.12, 2400, 'bandpass'); },
