@@ -198,6 +198,8 @@ body {
 .dailybtn small { display: block; font-weight: 800; font-size: 12.5px; line-height: 1.2; color: var(--ink-2); }
 .dailybtn em { font-style: normal; font-family: var(--display); font-size: 15px; background: var(--ink); color: var(--peel); border-radius: 99px; padding: 3px 10px; white-space: nowrap; }
 .dailycard { max-width: 380px; gap: 12px; }
+.qpill { pointer-events: auto; font-family: var(--body); font-weight: 800; font-size: 13px; color: var(--cream); background: var(--ink); border: 2px solid var(--cream); border-radius: 99px; padding: 3px 12px; cursor: pointer; text-shadow: none; }
+.qpill:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 .labbtn { pointer-events: auto; flex-basis: 100%; display: flex; align-items: center; gap: 8px; background: var(--cream); color: var(--ink); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink); padding: 5px 12px; cursor: pointer; font-family: var(--display); font-size: 16px; text-shadow: none; }
 .labbtn svg { width: 22px; height: 22px; flex: none; }
 .labbtn small { font-family: var(--body); font-weight: 800; font-size: 12px; color: var(--ink-2); margin-left: auto; }
@@ -321,7 +323,8 @@ body {
   <div class="overlay clear" id="menu" hidden>
     <div class="mapbar outline"><b>Mapa</b><span class="startot" aria-label="Estrellas conseguidas"><i></i><span id="starTotal">0 / 0</span></span><div class="collection" id="collection" aria-label="Tus frutas"></div>
       <button type="button" class="dailybtn" id="dailyBtn"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M12 6h16v8a8 8 0 0 1-16 0z" fill="#ffc93c" stroke="#2a1650" stroke-width="3" stroke-linejoin="round"/><path d="M12 9H6a6 6 0 0 0 6 7M28 9h6a6 6 0 0 1-6 7" fill="none" stroke="#2a1650" stroke-width="3"/><path d="M17 22h6v6h-6zM12 34h16v-6H12z" fill="#ff3d7f" stroke="#2a1650" stroke-width="3" stroke-linejoin="round"/></svg><span><b>Reto del día</b><small id="dailySub">El mismo nivel para todo el mundo</small></span><em id="dailyTag">Jugar</em></button>
-      <button type="button" class="labbtn" id="labBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><path d="M7.5 15h9l1.6 3.2a1 1 0 0 1-.9 1.3H6.8a1 1 0 0 1-.9-1.3z" fill="#a8f03a"/></svg>Campo de pruebas<small>oficina, casa, picnic…</small></button></div>
+      <button type="button" class="labbtn" id="labBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><path d="M7.5 15h9l1.6 3.2a1 1 0 0 1-.9 1.3H6.8a1 1 0 0 1-.9-1.3z" fill="#a8f03a"/></svg>Campo de pruebas<small>oficina, casa, picnic…</small></button>
+      <button type="button" class="qbtn qpill" aria-label="Cambiar calidad gráfica">Gráficos: Alta</button></div>
     <div class="map" id="map"></div>
     <div class="maptoast" id="mapToast" hidden></div>
   </div>
@@ -369,6 +372,7 @@ body {
       <button class="btn" id="pauseResume">Seguir</button>
       <button class="btn alt" id="pauseRetry">Reintentar</button>
       <button class="btn alt" id="pauseExit">Salir al mapa</button>
+      <button type="button" class="linkbtn qbtn" aria-label="Cambiar calidad gráfica">Gráficos: Alta</button>
     </div>
   </div>
 
@@ -422,6 +426,7 @@ body {
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/effects/OutlineEffect.js"></script>
 <script>
 (() => {
 'use strict';
@@ -442,12 +447,42 @@ const GRAV = 14, KN = 4, SLIME_Y = -7, SUB = 3, PITCH = 0.5, TR = 4;
 const CAM_POS = V(0, 1.6, 0.4);
 const JACKPOT_CHANCE = 0.02;
 
+/* ---------- cartoon look ---------- */
+// Every "standard" material in the game becomes a cel-shaded toon material with three hard light
+// bands. Toon shading is also cheaper than PBR, which helps on phones.
+const TOON_RAMP = (() => {
+  const t = new THREE.DataTexture(new Uint8Array([105, 175, 232]), 3, 1, THREE.LuminanceFormat);
+  t.minFilter = t.magFilter = THREE.NearestFilter; t.generateMipmaps = false; t.needsUpdate = true; return t;
+})();
+const TOON_KEYS = new Set(['color', 'map', 'emissive', 'emissiveIntensity', 'emissiveMap', 'transparent', 'opacity', 'side', 'depthWrite', 'depthTest', 'polygonOffset', 'polygonOffsetFactor', 'polygonOffsetUnits', 'alphaTest', 'blending']);
+const StdMaterial = THREE.MeshStandardMaterial, BasicMaterial = THREE.MeshBasicMaterial;
+THREE.MeshStandardMaterial = function (params = {}) {
+  const p = { gradientMap: TOON_RAMP };
+  for (const k in params) if (TOON_KEYS.has(k)) p[k] = params[k];
+  const m = new THREE.MeshToonMaterial(p);
+  if (p.transparent) m.userData.outlineParameters = { visible: false };
+  return m;
+};
+// flat stuff (signs, lights, decals, effects) never gets an outline
+THREE.MeshBasicMaterial = function (params) { const m = new BasicMaterial(params); m.userData.outlineParameters = { visible: false }; return m; };
+const noOutline = mesh => { [].concat(mesh.material).forEach(m => { m.userData.outlineParameters = { visible: false }; }); return mesh; };
+
 /* ---------- renderer ---------- */
+const QUALITY = {
+  alta: { label: 'Alta', pr: 2, shadows: 2048, soft: true, outline: true, fx: 1, decals: 320 },
+  media: { label: 'Media', pr: 1.5, shadows: 1024, soft: false, outline: true, fx: 0.75, decals: 200 },
+  baja: { label: 'Baja', pr: 1, shadows: 0, soft: false, outline: false, fx: 0.5, decals: 100 },
+};
+let qName = 'alta';
+try { qName = localStorage.getItem('fruitparty-quality') || (window.matchMedia && matchMedia('(pointer: coarse)').matches ? 'media' : 'alta'); } catch (e) {}
+if (!QUALITY[qName]) qName = 'media';
+const QL = () => QUALITY[qName];
 const stage = $('#stage');
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, QL().pr));
+renderer.shadowMap.enabled = !!QL().shadows;
+renderer.shadowMap.type = QL().soft ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+const outlineFx = THREE.OutlineEffect ? new THREE.OutlineEffect(renderer, { defaultThickness: 0.0045, defaultColor: [0.16, 0.09, 0.31], defaultAlpha: 1 }) : null;
 stage.prepend(renderer.domElement);
 const canvas = renderer.domElement;
 const scene = new THREE.Scene();
@@ -455,6 +490,17 @@ const camera = new THREE.PerspectiveCamera(62, 9 / 16, 0.05, 500);
 camera.rotation.order = 'YXZ';
 scene.add(camera);
 let baseFov = 62;
+function applyQuality(name) {
+  if (name) { qName = name; try { localStorage.setItem('fruitparty-quality', qName); } catch (e) {} }
+  const q = QL();
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, q.pr));
+  renderer.shadowMap.enabled = !!q.shadows;
+  renderer.shadowMap.type = q.soft ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+  if (q.shadows) { sun.shadow.mapSize.set(q.shadows, q.shadows); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
+  scene.traverse(o => { if (o.material) [].concat(o.material).forEach(m => { m.needsUpdate = true; }); });
+  resize();
+  document.querySelectorAll('.qbtn').forEach(b => { b.textContent = 'Gráficos: ' + q.label; });
+}
 function resize() {
   const w = stage.clientWidth || 360, h = stage.clientHeight || 640;
   renderer.setSize(w, h, false);
@@ -465,10 +511,14 @@ function resize() {
 new ResizeObserver(resize).observe(stage);
 resize();
 
-scene.add(new THREE.HemisphereLight(0xffffff, 0x9b7bd0, 0.72));
-const sun = new THREE.DirectionalLight(0xfff4e0, 0.9);
+scene.add(new THREE.HemisphereLight(0xfff6ee, 0x8f7ac8, 0.42));
+const sun = new THREE.DirectionalLight(0xfff1d6, 0.78);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.set(QL().shadows || 1024, QL().shadows || 1024);
+sun.shadow.radius = 3;
+// soft cool fill from the player's side so shadowed faces stay readable
+const fill = new THREE.DirectionalLight(0xbfd8ff, 0.2); fill.position.set(-20, 12, 30);
+scene.add(fill);
 Object.assign(sun.shadow.camera, { left: -38, right: 38, top: 38, bottom: -38, near: 1, far: 120 });
 sun.shadow.bias = -0.0008;
 sun.target.position.set(0, 0, -26);
@@ -1200,7 +1250,7 @@ function hoop(x, y, z) {
 }
 function makeSlime(theme) {
   slime = new THREE.Mesh(new THREE.PlaneGeometry(420, 420, 56, 56), new THREE.MeshStandardMaterial({ color: theme.slime, roughness: 0.25, metalness: 0.05, flatShading: true }));
-  slime.rotation.x = -Math.PI / 2; slime.position.y = SLIME_Y; slime.receiveShadow = true;
+  slime.rotation.x = -Math.PI / 2; slime.position.y = SLIME_Y; slime.receiveShadow = true; noOutline(slime);
   world.add(slime);
 }
 function populate(pl, theme) {
@@ -1343,7 +1393,7 @@ function genTunnel() {
     g.fillStyle = th.line; for (let k = 0; k < 8; k++) g.fillRect(0, k * h / 8, w, 2);
   });
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(Math.round(L / 5), 1);
-  const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.floor(L / 1.5), TR, 36, false), new THREE.MeshStandardMaterial({ map: tex, side: THREE.DoubleSide, roughness: 0.45 }));
+  const tube = noOutline(new THREE.Mesh(new THREE.TubeGeometry(curve, Math.floor(L / 1.5), TR, 36, false), new THREE.MeshStandardMaterial({ map: tex, side: THREE.DoubleSide, roughness: 0.45 })));
   world.add(tube);
   // outer hoops on the shell so the tube reads as an object from outside
   for (let s = 10; s < L; s += 18) {
@@ -2282,7 +2332,7 @@ function decalMat(color) {
   if (!decalMats.has(color)) decalMats.set(color, new THREE.MeshStandardMaterial({ map: splatTex, color, transparent: true, opacity: 0.88, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, roughness: 0.25, metalness: 0.05 }));
   return decalMats.get(color);
 }
-const DECALS = [], MAX_DECALS = 320, DTMP = V();
+const DECALS = [], DTMP = V();
 // a splat of juice on a surface; it sticks to `parent` (a prop) and travels with it
 function stain(point, normal, color, size, parent) {
   if (!world || size <= 0.02) return;
@@ -2296,7 +2346,7 @@ function stain(point, normal, color, size, parent) {
   const sx = size * rand(0.85, 1.2), sy = size * rand(0.85, 1.2), base = m.scale.clone();
   fx.push({ t: 0, dur: 0.14, upd(k) { const e = 1 - Math.pow(1 - k, 3); m.scale.set(base.x * sx * e, base.y * sy * e, 1); } });
   DECALS.push(m);
-  if (DECALS.length > MAX_DECALS) { const o = DECALS.shift(); if (o.parent) o.parent.remove(o); }
+  while (DECALS.length > QL().decals) { const o = DECALS.shift(); if (o.parent) o.parent.remove(o); }
 }
 // floor height under (x, z), searching from y downwards
 function floorBelow(x, z, y) {
@@ -2328,6 +2378,7 @@ function addDebris(m, pos, vel, life, grav = GRAV) {
   debris.push({ m, vel, life, grav, spin: V(rand(-8, 8), rand(-8, 8), rand(-8, 8)), s0: m.scale.clone() });
 }
 function burst(pos, color, n, speed, size) {
+  n = Math.max(1, Math.round(n * QL().fx));
   const m0 = mat(color, { roughness: 0.4 });
   for (let i = 0; i < n; i++) {
     const m = new THREE.Mesh(GEO.lowSphere, m0); m.scale.setScalar(size * rand(0.6, 1.3));
@@ -3070,7 +3121,7 @@ function beachBall(x, top, z, rr) {
 }
 function rug(x, z, w, d) {
   const t = cachedTexMat('rug', () => canvasTex(128, 96, (g, W, H) => { g.fillStyle = '#d8573a'; g.fillRect(0, 0, W, H); g.strokeStyle = '#ffd23f'; g.lineWidth = 6; g.strokeRect(8, 8, W - 16, H - 16); g.fillStyle = '#3fb6ff'; g.beginPath(); g.ellipse(W / 2, H / 2, 28, 18, 0, 0, 6.3); g.fill(); }));
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshStandardMaterial({ map: t, roughness: 1 })); m.rotation.x = -Math.PI / 2; m.position.set(x, 0.03, z); m.receiveShadow = true; world.add(m);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshStandardMaterial({ map: t, roughness: 1 })); m.rotation.x = -Math.PI / 2; m.position.set(x, 0.03, z); m.receiveShadow = true; noOutline(m); world.add(m);
 }
 function genHouse() {
   clearWorld();
@@ -3212,7 +3263,7 @@ function genPicnic() {
   OS = 1;
   addPlatform(0, 0, -45, 84, 112, 0x6fc13a, theme, grassMat(84, 112));
   const blanket = new THREE.Mesh(new THREE.PlaneGeometry(40, 36), new THREE.MeshStandardMaterial({ roughness: 1, map: (() => { const t = canvasTex(128, 128, (g, w, h) => { for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) { g.fillStyle = (i + j) % 2 ? '#e8303a' : '#fdf3ee'; g.fillRect(i * 16, j * 16, 16, 16); } }); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3, 3); return t; })() }));
-  blanket.rotation.x = -Math.PI / 2; blanket.position.set(0, 0.03, -40); blanket.receiveShadow = true; world.add(blanket);
+  blanket.rotation.x = -Math.PI / 2; blanket.position.set(0, 0.03, -40); blanket.receiveShadow = true; noOutline(blanket); world.add(blanket);
   // you stand on the cool box
   solid(-2.6, 0, -1, 2.6, 2.3, 2, mat(0x3fb6ff, { roughness: 0.5 }));
   const lid = new THREE.Mesh(B(5.4, 0.3, 3.2), mat(0xfdfdf8)); lid.position.set(0, 2.45, 0.5); world.add(lid);
@@ -3326,6 +3377,8 @@ $('#pauseExit').addEventListener('click', () => {
   if (G.tutorial) { try { localStorage.setItem('fruitparty-onboarded', '1'); } catch (e) {} }
   G.sandbox = null; SFX.tick(); goMenu();
 });
+document.querySelectorAll('.qbtn').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); const order = ['alta', 'media', 'baja']; applyQuality(order[(order.indexOf(qName) + 1) % 3]); SFX.tick(); }));
+applyQuality();
 $('#bagBack').addEventListener('click', () => { SFX.tick(); goMenu(); });
 const LAB_NAME = { office: 'Oficina de pruebas', house: 'Casa de pruebas', picnic: 'Picnic gigante', islands: 'Islas de prueba', tunnel: 'Túnel de prueba' };
 const LAB_SEED = { office: 6161, house: 7171, picnic: 8181, islands: 4242, tunnel: 5151 };
@@ -3928,7 +3981,7 @@ function frame(now) {
   G.shake *= Math.exp(-7 * rdt);
   const sh = G.shake > 0.01 ? Tv.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(G.shake * 0.22).clone() : null;
   if (sh) camera.position.add(sh);
-  renderer.render(scene, camera);
+  if (QL().outline && outlineFx) outlineFx.render(scene, camera); else renderer.render(scene, camera);
   if (sh) camera.position.sub(sh);
 }
 const handEl = $('#hand'), ffEl = $('#ff');
