@@ -79,6 +79,12 @@ body {
 .icon-btn.corner { top: calc(14px + env(safe-area-inset-top, 0px)); }
 #stage.lab .icon-btn:not(.corner) { top: calc(176px + env(safe-area-inset-top, 0px)); }
 .icon-btn.music { right: calc(max(14px, env(safe-area-inset-right, 0px)) + 46px); }
+.icon-btn.pause { right: calc(max(14px, env(safe-area-inset-right, 0px)) + 92px); background: var(--peel); }
+#pause { z-index: 7; }
+.pausecard { max-width: 320px; }
+.pausecard .btn { width: 100%; }
+.linkbtn { background: none; border: none; font: inherit; font-weight: 800; font-size: 14px; color: var(--ink-2); text-decoration: underline; cursor: pointer; padding: 4px; }
+.linkbtn:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
 .icon-btn.off { background: #d9cdee; }
 
 #pops { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
@@ -290,6 +296,7 @@ body {
   </div>
   <button class="icon-btn corner" id="mute" aria-label="Silenciar sonido"></button>
   <button class="icon-btn corner music" id="music" aria-label="Quitar música"></button>
+  <button class="icon-btn pause" id="pauseBtn" aria-label="Pausa" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4.2" height="14" rx="1.5" fill="currentColor"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.5" fill="currentColor"/></svg></button>
   <div id="pops"></div>
   <div id="flash"></div>
   <canvas id="speed"></canvas>
@@ -346,6 +353,17 @@ body {
       <button class="btn" id="next">Siguiente nivel</button>
     </div>
   </div>
+  <div class="overlay" id="pause" hidden>
+    <div class="card pausecard">
+      <div class="kicker" id="pauseKicker">Nivel 1</div>
+      <h2>Pausa</h2>
+      <p id="pauseInfo">Lo que llevas de este nivel se pierde si sales.</p>
+      <button class="btn" id="pauseResume">Seguir</button>
+      <button class="btn alt" id="pauseRetry">Reintentar</button>
+      <button class="btn alt" id="pauseExit">Salir al mapa</button>
+    </div>
+  </div>
+
   <div class="overlay" id="bag" hidden>
     <div class="card bagcard">
       <div class="kicker" id="bagKicker">Nivel 1</div>
@@ -358,6 +376,7 @@ body {
         <button class="btn alt" id="bagClear">Vaciar</button>
       </div>
       <button class="btn" id="bagGo">¡Al lío!</button>
+      <button type="button" class="linkbtn" id="bagBack">Volver al mapa</button>
     </div>
   </div>
 
@@ -972,7 +991,7 @@ function showMenu() {
   G.mode = 'menu'; G.state = 'idle'; G.daily = null; G.sandbox = null;
   renderBoard();
   $('#hud').hidden = true;
-  $('#mute').classList.add('corner'); $('#music').classList.add('corner');
+  $('#mute').classList.add('corner'); $('#music').classList.add('corner'); $('#pauseBtn').hidden = true;
   $('#menu').hidden = false;
   renderMap();
 }
@@ -2407,6 +2426,7 @@ function shotOver() {
   else { G.state = 'aim'; loadFruit(); renderTray(); }
 }
 function levelEnd() {
+  if (G.mode !== 'islands' && G.mode !== 'tunnel') return;
   let bonus = 0, hitsTxt, cleared = false;
   if (G.mode === 'islands') {
     cleared = targetsLeft() === 0;
@@ -2932,13 +2952,40 @@ function startSandbox(kind) {
   G.sel = keep; loadFruit(); renderTray();
 }
 function goMenu() {
-  $('#end').hidden = true;
+  G.paused = false;
+  ['#end', '#pause', '#bag', '#slot', '#reveal'].forEach(id => $(id).hidden = true);
+  G.speedFx = 0; G.drag = null; G.pull = 0;
   if (G.loaded) { holder.remove(G.loaded.mesh); G.loaded = null; }
   camera.up.set(0, 1, 0);
   camLight.intensity = 0;
   genTitle(true);
   showMenu();
 }
+function restartCurrent() {
+  G.paused = false; $('#pause').hidden = true;
+  if (G.sandbox) startSandbox(G.sandbox);
+  else if (G.daily) startDaily();
+  else if (G.tutorial) startLevel(1, true);
+  else if (G.node) startNode(G.node);
+}
+function openPause() {
+  if (G.mode !== 'islands' && G.mode !== 'tunnel') return;
+  if (!$('#end').hidden || !$('#bag').hidden || !$('#slot').hidden || !$('#reveal').hidden) return;
+  G.paused = true; G.drag = null; G.pull = 0; G.touch = null; G.steer = 0;
+  $('#pauseKicker').textContent = $('#lvlNum').textContent + ' · ' + $('#lvlName').textContent;
+  $('#pauseInfo').textContent = G.sandbox ? 'En el campo de pruebas no se pierde nada.' : G.tutorial ? 'Puedes saltarte el tutorial: el mapa te espera.' : 'Lo que llevas de este nivel se pierde si sales.';
+  $('#pause').hidden = false; $('#pauseResume').focus();
+  SFX.tick();
+}
+function closePause() { G.paused = false; $('#pause').hidden = true; }
+$('#pauseBtn').addEventListener('click', e => { e.stopPropagation(); audioOn(); openPause(); });
+$('#pauseResume').addEventListener('click', closePause);
+$('#pauseRetry').addEventListener('click', () => { SFX.tick(); restartCurrent(); });
+$('#pauseExit').addEventListener('click', () => {
+  if (G.tutorial) { try { localStorage.setItem('fruitparty-onboarded', '1'); } catch (e) {} }
+  G.sandbox = null; SFX.tick(); goMenu();
+});
+$('#bagBack').addEventListener('click', () => { SFX.tick(); goMenu(); });
 const LAB_NEXT = { office: 'islands', islands: 'tunnel', tunnel: 'office' };
 const LAB_NAME = { office: 'Oficina de pruebas', islands: 'Islas de prueba', tunnel: 'Túnel de prueba' };
 const LAB_SHORT = { office: 'oficina', islands: 'islas', tunnel: 'túnel' };
@@ -2982,6 +3029,7 @@ function startLevel(level, tutorial = false, seed = 0) {
   camera.up.set(0, 1, 0);
   $('#menu').hidden = true; $('#end').hidden = true;
   $('#hud').hidden = false; $('#mute').classList.remove('corner'); $('#music').classList.remove('corner');
+  $('#pauseBtn').hidden = false; $('#pause').hidden = true; $('#bag').hidden = true; $('#slot').hidden = true; G.paused = false;
   $('#goldTag').hidden = true;
   $('#aimHint').innerHTML = level === 1 ? 'Arrastra hacia abajo para tensar<br>y a los lados para apuntar' : 'Tensa para coger velocidad.<br>En el túnel, desliza a los lados para patinar.';
   $('#aimHint').hidden = true;
@@ -3137,6 +3185,7 @@ $('#toMenu').addEventListener('click', goMenu);
 /* ---------- input ---------- */
 canvas.addEventListener('pointerdown', e => {
   audioOn();
+  if (G.paused) return;
   if (G.mode !== 'islands' && G.mode !== 'tunnel') return;
   if (G.camMode === 'intro') { G.introT = 1; return; }
   if (G.state === 'aim' && G.loaded && G.camMode === 'pov') {
@@ -3177,6 +3226,8 @@ canvas.addEventListener('pointerup', release);
 canvas.addEventListener('pointercancel', release);
 const keys = {};
 window.addEventListener('keydown', e => {
+  if (e.code === 'Escape' || e.code === 'KeyP') { if (G.paused) closePause(); else openPause(); return; }
+  if (G.paused) return;
   if (e.code === 'Space' && G.state === 'flight') { e.preventDefault(); if (G.mode === 'islands') useAbility(); else tunnelAbility(); }
   if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.l = 1;
   if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.r = 1;
@@ -3340,7 +3391,7 @@ const MUSIC = (() => {
     update() {
       want = G.mode === 'tunnel' ? 'tunnel' : G.mode === 'islands' ? 'islands' : 'menu';
       // music goes muffled in slow motion
-      const tgt = G.timeScale < 0.75 ? 650 : 16000;
+      const tgt = G.timeScale < 0.75 || G.paused ? 650 : 16000;
       if (filt && tgt !== filtTarget) { filtTarget = tgt; filt.frequency.setTargetAtTime(tgt, AC.currentTime, 0.08); }
     },
     toggle() { on = !on; try { localStorage.setItem('fruitparty-music', on ? '1' : '0'); } catch (e) {} return on; },
@@ -3446,7 +3497,7 @@ function frame(now) {
   else G.timeScale += ((ffOn ? 2.2 : 1) - G.timeScale) * Math.min(1, rdt * 5);
   if (G.state === 'flight') G.flightT = (G.flightT || 0) + rdt;
   if (ffEl.hidden === ffOn) ffEl.hidden = !ffOn;
-  const dt = G.hitstop > 0 ? 0 : rdt * G.timeScale;
+  const dt = G.hitstop > 0 || G.paused ? 0 : rdt * G.timeScale;
 
   for (const sw of sweepers) {
     sw.ang += sw.w * dt; sw.g.rotation.y = sw.ang; sw.cd -= dt;
